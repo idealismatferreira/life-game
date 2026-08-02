@@ -1,39 +1,29 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
-<head>
+<html lang="pt-BR"><head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>Protótipo de Combate</title>
+<title>Jogo LIFE</title>
 <meta name="theme-color" content="#0d1210" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-title" content="Combate" />
+<meta name="apple-mobile-web-app-title" content="LIFE" />
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27512%27 height=%27512%27%3E%3Crect width=%27512%27 height=%27512%27 rx=%27110%27 fill=%27%230d1210%27/%3E%3Ctext x=%27256%27 y=%27370%27 font-size=%27300%27 text-anchor=%27middle%27%3E%E2%9A%94%EF%B8%8F%3C/text%3E%3C/svg%3E" />
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;
-  -webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
-html,body{height:100%;overflow:hidden;background:#0d1210;
-  font-family:Sora,system-ui,sans-serif;overscroll-behavior:none;}
+<style>*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
+html,body{height:100%;overflow:hidden;background:#0d1210;font-family:Sora,system-ui,sans-serif;overscroll-behavior:none;}
 #cv{display:block;touch-action:none;}
-#load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-  background:#0d1210;color:#7fd858;font-size:15px;z-index:20;}
-#dica{position:fixed;top:120px;left:0;right:0;text-align:center;color:#9db8a4;
-  font-size:12px;pointer-events:none;animation:some 1s ease 7s forwards;}
-#resson{position:fixed;top:92px;left:0;right:0;display:none;justify-content:center;gap:12px;
-  font-size:11px;font-weight:600;pointer-events:none;}
+#load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0d1210;color:#7fd858;font-size:15px;z-index:20;}
+#dica{position:fixed;top:120px;left:0;right:0;text-align:center;color:#9db8a4;font-size:12px;pointer-events:none;animation:some 1s ease 7s forwards;}
 @keyframes some{to{opacity:0;}}
-</style>
-</head>
-<body>
+#resson{position:fixed;top:92px;left:0;right:0;display:none;justify-content:center;gap:12px;font-size:11px;font-weight:600;pointer-events:none;}</style></head><body>
 <canvas id="cv"></canvas>
 <div id="resson"></div>
 <div id="dica">arraste para andar · toque nos ícones para trocar de arma</div>
 <div id="load">carregando…</div>
-<script>(function(){var i="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27512%27 height=%27512%27%3E%3Crect width=%27512%27 height=%27512%27 rx=%27110%27 fill=%27%230d1210%27/%3E%3Ctext x=%27256%27 y=%27370%27 font-size=%27300%27 text-anchor=%27middle%27%3E%E2%9A%94%EF%B8%8F%3C/text%3E%3C/svg%3E";var m={name:"Protótipo de Combate",short_name:"Combate",start_url:".",display:"fullscreen",orientation:"portrait",background_color:"#0d1210",theme_color:"#0d1210",icons:[{src:i,sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};var b=new Blob([JSON.stringify(m)],{type:"application/manifest+json"});var l=document.createElement("link");l.rel="manifest";l.href=URL.createObjectURL(b);document.head.appendChild(l);})();</script>
+<script>(function(){var i="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27512%27 height=%27512%27%3E%3Crect width=%27512%27 height=%27512%27 rx=%27110%27 fill=%27%230d1210%27/%3E%3Ctext x=%27256%27 y=%27370%27 font-size=%27300%27 text-anchor=%27middle%27%3E%E2%9A%94%EF%B8%8F%3C/text%3E%3C/svg%3E";var m={name:"Jogo LIFE",short_name:"LIFE",start_url:".",display:"fullscreen",orientation:"portrait",background_color:"#0d1210",theme_color:"#0d1210",icons:[{src:i,sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};var b=new Blob([JSON.stringify(m)],{type:"application/manifest+json"});var l=document.createElement("link");l.rel="manifest";l.href=URL.createObjectURL(b);document.head.appendChild(l);})();</script>
 <script>window.addEventListener("error",function(e){var l=document.getElementById("load");if(l){l.style.display="flex";l.style.color="#ff8f8f";l.textContent="Erro: "+(e.message||"");}});</script>
 <script>
-const P = (function(){ /* ==========================================================
+const P=(function(){ /* ==========================================================
    PROGRESSÃO — escolas, evolução de armas, modificadores
    e Ressonância (ligada à rotina real do LIFE Dashboard).
 
@@ -136,7 +126,7 @@ const ARVORES = {
     }
   },
   varinha: {
-    base: { id: "varinha", nome: "Varinha", icone: "🪄", cor: "#8be9ff",
+    base: { id: "varinha", nome: "Tubo de ensaio", icone: "🧪", cor: "#8be9ff",
             desc: "atinge de longe, perfura" },
     ramos: {
       prismatico: {
@@ -169,7 +159,7 @@ const ARVORES = {
     }
   },
   martelo: {
-    base: { id: "martelo", nome: "Martelo", icone: "🔨", cor: "#ffcf6b",
+    base: { id: "martelo", nome: "Barra olímpica", icone: "🏋️", cor: "#ffcf6b",
             desc: "esmaga o graúdo" },
     ramos: {
       sismico: {
@@ -266,6 +256,109 @@ const SUPERS = {
   enxame:       { id:"enxame", escola:"tatica", nome:"Enxame", icone:"🐝", cd:17, desc:"drones perseguem inimigos", nivel:1 },
 };
 
+
+/* ==========================================================
+   PROGRESSÃO PELA VIDA REAL
+   XP Geral  -> destrava ARMAS
+   Passadas por categoria -> evolui a MAESTRIA daquela arma
+   ========================================================== */
+
+/* ordem de desbloqueio e categoria que evolui cada arma */
+const ARMAS_JOGO = [
+  { id:"soco",    nome:"Soco",                icone:"👊", xp:0,   categoria:null,
+    desc:"lento, mas é o que você tem" },
+  { id:"faca",    nome:"Faca de cozinha",     icone:"🔪", xp:18,  categoria:"Casa e Rotina",
+    desc:"rápida, sangra o alvo" },
+  { id:"martelo", nome:"Barra olímpica",      icone:"🏋️", xp:40,  categoria:"Treinos",
+    desc:"lenta, esmaga o graúdo" },
+  { id:"varinha", nome:"Tubo de ensaio",      icone:"🧪", xp:75,  categoria:"Estudos",
+    desc:"atinge de longe, perfura" },
+  { id:"apito",   nome:"Apito de treinador",  icone:"🎽", xp:115, categoria:"Trabalho e Consultoria",
+    desc:"invoca aliados que lutam por você" },
+  { id:"arco",    nome:"Arco",                icone:"🏹", xp:160, categoria:"Lazer e Música",
+    desc:"alcance longo, premia o ritmo" },
+  { id:"espada",  nome:"Espada",              icone:"⚔️", xp:220, categoria:"Bem-estar e Espiritualidade",
+    desc:"arco amplo, corta vários" },
+];
+
+/* XP de uma passada conforme a dificuldade da etapa */
+function xpDaPassada(meta) {
+  const m = Math.max(1, Number(meta) || 1);
+  return 1 + (m - 1) * 0.5;
+}
+
+/* Cruza o Log (eventos) com o Check (metas) e devolve o progresso real.
+   log:  [{data, categoria, projeto, etapa}]
+   rows: [{categoria, projeto, etapa, meta}]  */
+function progressoDaVida(log, rows) {
+  // mapa etapa -> meta
+  const metas = {};
+  (rows || []).forEach(r => {
+    if (!r || !r.etapa) return;
+    metas[`${r.categoria}|${r.projeto}|${r.etapa}`] = Number(r.meta) || 1;
+  });
+
+  let xpGeral = 0;
+  const passadasPorCat = {};
+  const xpPorCat = {};
+
+  (log || []).forEach(ev => {
+    if (!ev || !ev.categoria) return;
+    const meta = metas[`${ev.categoria}|${ev.projeto}|${ev.etapa}`] || 1;
+    const xp = xpDaPassada(meta);
+    xpGeral += xp;
+    passadasPorCat[ev.categoria] = (passadasPorCat[ev.categoria] || 0) + 1;
+    xpPorCat[ev.categoria] = (xpPorCat[ev.categoria] || 0) + xp;
+  });
+
+  return { xpGeral, passadasPorCat, xpPorCat, totalPassadas: (log || []).length };
+}
+
+/* quais armas estão liberadas com esse XP */
+function armasLiberadas(xpGeral) {
+  return ARMAS_JOGO.filter(a => xpGeral >= a.xp).map(a => a.id);
+}
+
+/* próxima arma a destravar (para mostrar a barra de progresso) */
+function proximaArma(xpGeral) {
+  const prox = ARMAS_JOGO.find(a => xpGeral < a.xp);
+  if (!prox) return null;
+  const anterior = [...ARMAS_JOGO].reverse().find(a => a.xp <= xpGeral);
+  const base = anterior ? anterior.xp : 0;
+  return { ...prox, falta: prox.xp - xpGeral,
+           pct: Math.max(0, Math.min(1, (xpGeral - base) / (prox.xp - base))) };
+}
+
+/* VIGOR — reduz a cadência de qualquer arma */
+const VIGOR = { porBloco: 0.04, bloco: 25, teto: 0.40 };
+function vigorDe(xpGeral) {
+  return Math.min(VIGOR.teto, Math.floor(xpGeral / VIGOR.bloco) * VIGOR.porBloco);
+}
+
+/* MAESTRIA por categoria (substitui a maestria por dano causado) */
+const MAESTRIA_VIDA = { t2: 15, t3: 55 };   // passadas da categoria
+
+function estadoArmaVida(save, armaId, passadasPorCat) {
+  const def = ARMAS_JOGO.find(a => a.id === armaId);
+  const cat = def ? def.categoria : null;
+  const passadas = cat ? (passadasPorCat[cat] || 0) : 0;
+  const ramo = (save.ramo || {})[armaId] || null;
+  const fin  = (save.final || {})[armaId] || null;
+
+  let tier = 1, prox = MAESTRIA_VIDA.t2, pendente = null;
+  if (passadas >= MAESTRIA_VIDA.t2 && !ramo) pendente = "ramo";
+  if (ramo) {
+    tier = 2; prox = MAESTRIA_VIDA.t3;
+    if (passadas >= MAESTRIA_VIDA.t3 && !fin) pendente = "final";
+    if (fin) { tier = 3; prox = null; }
+  }
+  return {
+    tier, passadas, prox, pendente, ramo, final: fin, categoria: cat,
+    falta: prox ? Math.max(0, prox - passadas) : 0,
+    pct: prox ? Math.min(1, passadas / prox) : 1,
+  };
+}
+
 /* ----------------------------------------------------------
    SAVE — progresso persistente
 ---------------------------------------------------------- */
@@ -278,6 +371,7 @@ function saveVazio() {
     ramo:    { espada: null, varinha: null, martelo: null },   // escolha de tier 2
     final:   { espada: null, varinha: null, martelo: null },   // escolha de tier 3
     escolasAbertas: ["harmonica"],
+    armaEquipada: "soco",
     supersAbertos: ["acorde"],
     superEquipado: "acorde",
     melhorTempo: 0, melhorNivel: 0, totalKills: 0, runs: 0,
@@ -325,6 +419,10 @@ function estadoArma(save, arma) {
 /* nome/visual atual da arma conforme evolução */
 function armaAtual(save, arma) {
   const arv = ARVORES[arma];
+  if (!arv) {
+    const def = ARMAS_JOGO.find(a => a.id === arma);
+    return def ? { ...def, regra: null, tier: 1 } : { id: arma, nome: arma, icone: "•", regra: null, tier: 1 };
+  }
   const est = estadoArma(save, arma);
   if (est.final) {
     const f = arv.ramos[est.ramo].finais[est.final];
@@ -457,10 +555,11 @@ function checarMarcos(save) {
 
 /* exporta para o jogo e para os testes */
 
-  return { ESCOLAS, ARVORES, MAESTRIA, MODIFICADORES, SUPERS, SAVE_KEY, saveVazio, carregarSave,
-    gravarSave, estadoArma, armaAtual, opcoesEvolucao, escolherEvolucao, ganharMaestria,
-    calcularRessonancia, escolasDesbloqueadas, sortearUpgrades, supersDisponiveis, checarMarcos, diasDesde };
-})();
+  
+
+return {ESCOLAS,ARVORES,MAESTRIA,MODIFICADORES,SUPERS,SAVE_KEY,saveVazio,carregarSave,gravarSave,estadoArma,armaAtual,
+opcoesEvolucao,escolherEvolucao,ganharMaestria,calcularRessonancia,escolasDesbloqueadas,sortearUpgrades,supersDisponiveis,
+checarMarcos,diasDesde,ARMAS_JOGO,xpDaPassada,progressoDaVida,armasLiberadas,proximaArma,VIGOR,vigorDe,MAESTRIA_VIDA,estadoArmaVida};})();
 /* ==========================================================
    INTEGRAÇÃO — liga o combate ao sistema de progressão.
    Depende de: prog.js (dados) e combat.js (motor)
@@ -485,6 +584,7 @@ const META = {
 
 function initMeta() {
   META.save = P.carregarSave(localStorage);
+  if (typeof prepararAscensao === "function") prepararAscensao();
   aplicarRessonancia();
 }
 
@@ -515,8 +615,19 @@ async function aplicarRessonancia() {
       const j = await r.json();
       if (j.ok && j.rows) {
         rows = j.rows;
+        // busca também o Log — é dele que vem TODO o poder permanente
+        try {
+          const rl = await fetch(LIFE_API, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: "getLog" }),
+          });
+          const jl = await rl.json();
+          if (jl.ok && jl.log) META.log = jl.log;
+        } catch (e) { META.log = META.log || []; }
+        META.vida = P.progressoDaVida(META.log || [], rows);
         META.conexao = "ok";
-        META.conexaoDetalhe = `${rows.length} linhas lidas`;
+        META.conexaoDetalhe = `${rows.length} linhas · ${(META.log||[]).length} passadas`;
       } else {
         META.conexao = "erro";
         META.conexaoDetalhe = j.error || "a planilha respondeu sem dados";
@@ -526,6 +637,16 @@ async function aplicarRessonancia() {
       META.conexaoDetalhe = (e && e.message) ? e.message : "sem conexão";
     }
   }
+
+  // sem conexão: usa o último progresso salvo, para não "perder" armas
+  if (!META.vida) {
+    const salvo = META.save.vidaCache;
+    META.vida = salvo || { xpGeral: 0, passadasPorCat: {}, xpPorCat: {}, totalPassadas: 0 };
+  } else {
+    META.save.vidaCache = META.vida;
+    P.gravarSave(localStorage, META.save);
+  }
+  if (typeof atualizarArmasDisponiveis === "function") atualizarArmasDisponiveis();
 
   META.ressonancia = P.calcularRessonancia(rows || []);
   const novas = P.escolasDesbloqueadas(META.save, META.ressonancia);
@@ -586,7 +707,9 @@ function registrarDano(armaId, dano) {
 
 /* ---------- level-up: pausa e oferece 3 cartas ---------- */
 function aoSubirNivel() {
-  const ops = P.sortearUpgrades(p.nivel, META.modAtivos, META.save.escolasAbertas);
+  let ops = P.sortearUpgrades(p.nivel, META.modAtivos, META.save.escolasAbertas);
+  const corte = (typeof ASC !== "undefined") ? (ASC.mods.cartas || 0) : 0;
+  if (corte < 0) ops = ops.slice(0, Math.max(1, 3 + corte));
   if (!ops.length) return;
   META.pausa = { tipo: "upgrade" };
   META.cartas = ops;
@@ -616,10 +739,11 @@ function fimDeRun() {
   s.melhorTempo = Math.max(s.melhorTempo, Math.floor(G.run));
   s.melhorNivel = Math.max(s.melhorNivel, p.nivel);
 
-  for (const arma of ["espada", "varinha", "martelo"]) {
-    if (META.danoPorArma[arma] > 0) P.ganharMaestria(s, arma, META.danoPorArma[arma]);
-  }
-  let frag = Math.floor(G.kills * 0.5 + G.run * 0.3);
+  const bonusAsc = (typeof bonusRecompensa === "function" && typeof ASC !== "undefined")
+    ? bonusRecompensa(ASC.nivel) : 1;
+  /* a maestria agora vem 100% da vida real (passadas da categoria).
+     jogar rende apenas fragmentos e progresso de Ascensão. */
+  let frag = Math.floor((G.kills * 0.5 + G.run * 0.3) * bonusAsc);
   if (META.mod.avareza) frag = Math.floor(frag * 1.6);
   s.fragmentos += frag;
   META.ultimoFrag = frag;
@@ -630,25 +754,34 @@ function fimDeRun() {
   P.gravarSave(localStorage, s);
 
   // há evolução pendente?
-  META.evolucaoPendente = null;
-  for (const arma of ["espada", "varinha", "martelo"]) {
-    const op = P.opcoesEvolucao(s, arma);
-    if (op) { META.evolucaoPendente = { arma, ...op }; break; }
+  META.evolucaoPendente = proximaEvolucaoPendente();
+}
+
+/* procura a próxima arma que já tem passadas suficientes para evoluir */
+function proximaEvolucaoPendente() {
+  const ppc = (META.vida && META.vida.passadasPorCat) || {};
+  for (const def of P.ARMAS_JOGO) {
+    if (!def.categoria) continue;
+    if (!P.ARVORES[def.id]) continue;              // arma ainda sem árvore
+    if (!ORDEM_ARMAS.includes(def.id)) continue;   // nem destravou ainda
+    const est = P.estadoArmaVida(META.save, def.id, ppc);
+    if (est.pendente === "ramo")
+      return { arma: def.id, tipo: "ramo", opcoes: Object.values(P.ARVORES[def.id].ramos) };
+    if (est.pendente === "final")
+      return { arma: def.id, tipo: "final", opcoes: Object.values(P.ARVORES[def.id].ramos[est.ramo].finais) };
   }
+  return null;
 }
 
 function confirmarEvolucao(id) {
   const ev = META.evolucaoPendente;
   if (!ev) return;
-  P.escolherEvolucao(META.save, ev.arma, id);
+  if (ev.tipo === "ramo") META.save.ramo[ev.arma] = id;
+  else META.save.final[ev.arma] = id;
   P.gravarSave(localStorage, META.save);
   META.novidades.push({ tipo: "evolucao", arma: ev.arma, id });
   // procura próxima pendente
-  META.evolucaoPendente = null;
-  for (const arma of ["espada", "varinha", "martelo"]) {
-    const op = P.opcoesEvolucao(META.save, arma);
-    if (op) { META.evolucaoPendente = { arma, ...op }; break; }
-  }
+  META.evolucaoPendente = proximaEvolucaoPendente();
   som("nivel");
 }
 
@@ -662,6 +795,7 @@ function resetMeta() {
   p.raioColeta = 130;
   SUPER.cdMax = SUPER.cdBase;
 }
+
 
 /* ==========================================================
    SUPERPODERES — implementação real dos 12, por escola.
@@ -1009,6 +1143,111 @@ function superAtual() {
   const dados = P.SUPERS[id] || P.SUPERS.acorde;
   return { ...dados, impl: IMPL[id] || IMPL.acorde };
 }
+
+
+/* ==========================================================
+   ASCENSÃO — 20 níveis de dificuldade que se ACUMULAM.
+   Vence no nível N → libera o N+1. Você escolhe onde jogar.
+   Recompensa cresce junto: mais fragmentos e mais maestria.
+   ========================================================== */
+
+const ASCENSOES = [
+  { n:1,  nome:"Mais resistentes",   desc:"inimigos com +18% de vida",            m:{ hpInimigo:.18 } },
+  { n:2,  nome:"Chegam antes",       desc:"chefes aparecem 8s mais cedo",         m:{ chefeAntecipa:8 } },
+  { n:3,  nome:"Mais ligeiros",      desc:"inimigos +12% de velocidade",          m:{ velInimigo:.12 } },
+  { n:4,  nome:"Corpo frágil",       desc:"você começa com 15 de vida a menos",   m:{ hpJogador:-15 } },
+  { n:5,  nome:"Colheita magra",     desc:"orbes dão 18% menos XP",               m:{ xpMult:-.18 } },
+  { n:6,  nome:"Golpes duros",       desc:"inimigos causam +25% de dano",         m:{ danoInimigo:.25 } },
+  { n:7,  nome:"Escolha apertada",   desc:"só 2 cartas por nível, em vez de 3",   m:{ cartas:-1 } },
+  { n:8,  nome:"Horda densa",        desc:"inimigos surgem 25% mais rápido",      m:{ spawnMult:.25 } },
+  { n:9,  nome:"Couro grosso",       desc:"mais +22% de vida nos inimigos",       m:{ hpInimigo:.22 } },
+  { n:10, nome:"Poder contido",      desc:"superpoder recarrega 35% mais devagar",m:{ superCd:.35 } },
+  { n:11, nome:"Elites",             desc:"1 em cada 8 inimigos vem reforçado",   m:{ eliteChance:.125 } },
+  { n:12, nome:"Sem descanso",       desc:"o teto de inimigos na tela sobe 30%",  m:{ tetoExtra:.30 } },
+  { n:13, nome:"Chefes maiores",     desc:"chefes com +40% de vida",              m:{ hpChefe:.40 } },
+  { n:14, nome:"Passo apressado",    desc:"mais +12% de velocidade nos inimigos", m:{ velInimigo:.12 } },
+  { n:15, nome:"Aprendizado lento",  desc:"subir de nível custa 25% mais XP",     m:{ custoNivel:.25 } },
+  { n:16, nome:"Restos explosivos",  desc:"inimigos explodem ao morrer",          m:{ explodeAoMorrer:1 } },
+  { n:17, nome:"Fôlego do chefe",    desc:"chefes se curam se você demora",       m:{ chefeRegen:1 } },
+  { n:18, nome:"Investida final",    desc:"mais +30% de dano dos inimigos",       m:{ danoInimigo:.30 } },
+  { n:19, nome:"Legião",             desc:"mais +30% no ritmo de surgimento",     m:{ spawnMult:.30 } },
+  { n:20, nome:"O Colosso Desperto", desc:"o chefe final tem +80% de vida",       m:{ hpChefeFinal:.80 } },
+];
+
+/* modificadores acumulados até o nível escolhido */
+function modsAscensao(nivel) {
+  const m = {
+    hpInimigo:0, velInimigo:0, danoInimigo:0, hpJogador:0, xpMult:0,
+    cartas:0, chefeAntecipa:0, spawnMult:0, superCd:0, eliteChance:0,
+    tetoExtra:0, hpChefe:0, hpChefeFinal:0, custoNivel:0,
+    explodeAoMorrer:0, chefeRegen:0,
+  };
+  for (const a of ASCENSOES) {
+    if (a.n > nivel) break;
+    for (const [k, v] of Object.entries(a.m)) m[k] = (m[k] || 0) + v;
+  }
+  /* escalada progressiva: além das regras nomeadas, cada nível aperta o geral.
+     É o que faz A20 ser realmente brutal, e não só "A10 com dois detalhes". */
+  m.hpInimigo   += nivel * 0.055;
+  m.danoInimigo += nivel * 0.020;
+  m.velInimigo  += nivel * 0.008;
+  m.hpChefe     += nivel * 0.045;
+  return m;
+}
+
+/* recompensa cresce com a dificuldade */
+function bonusRecompensa(nivel) {
+  return 1 + nivel * 0.16;
+}
+
+/* estado da ascensão em uso na run atual */
+const ASC = { nivel: 0, mods: modsAscensao(0) };
+
+function prepararAscensao() {
+  const s = META.save;
+  if (s.ascensao === undefined) s.ascensao = 0;
+  if (s.ascensaoMax === undefined) s.ascensaoMax = 0;
+  ASC.nivel = Math.min(s.ascensao, s.ascensaoMax);
+  ASC.mods = modsAscensao(ASC.nivel);
+}
+
+/* chamado ao vencer: libera o próximo nível */
+function venceuNaAscensao() {
+  const s = META.save;
+  let novo = false;
+  if (ASC.nivel === s.ascensaoMax && s.ascensaoMax < ASCENSOES.length) {
+    s.ascensaoMax++;
+    novo = true;
+    META.novidades.push({ tipo:"ascensao", n: s.ascensaoMax });
+    // avança sozinho para o nível recém-liberado — é o que o jogador espera.
+    // (dá pra voltar a qualquer nível anterior pela aba Ascensão)
+    s.ascensao = s.ascensaoMax;
+    ASC.liberouAgora = s.ascensaoMax;
+  } else {
+    ASC.liberouAgora = null;
+  }
+  s.vitorias = (s.vitorias || 0) + 1;
+  if (!s.vitoriaPorNivel) s.vitoriaPorNivel = {};
+  s.vitoriaPorNivel[ASC.nivel] = (s.vitoriaPorNivel[ASC.nivel] || 0) + 1;
+  // grava aqui também, sem depender de quem chama
+  if (typeof P !== "undefined" && typeof localStorage !== "undefined") P.gravarSave(localStorage, s);
+  return novo;
+}
+
+function escolherAscensao(n) {
+  const s = META.save;
+  if (n < 0 || n > s.ascensaoMax) return false;
+  s.ascensao = n;
+  P.gravarSave(localStorage, s);
+  prepararAscensao();
+  return true;
+}
+
+/* rótulo curto para a HUD */
+function rotuloAscensao(n) {
+  return n === 0 ? "Ascensão 0 · base" : `Ascensão ${n}`;
+}
+
 
 /* ==========================================================
    REGRAS DE EVOLUÇÃO — o que cada uma das 27 formas
@@ -1597,6 +1836,7 @@ function desenharExtras() {
   }
 }
 
+
 /* ==========================================================
    HUB — a tela onde você VÊ e ESCOLHE.
    Abas: JOGAR · ESCOLAS · PODERES · ARMAS · VISUAL
@@ -1605,7 +1845,7 @@ function desenharExtras() {
 const HUB = {
   aberto: true,
   aba: 0,
-  abas: ["Jogar", "Escolas", "Poderes", "Armas", "Visual"],
+  abas: ["Jogar", "Ascensão", "Escolas", "Poderes", "Armas", "Visual"],
   scroll: 0,
   scrollMax: 0,
   toques: [],       // áreas clicáveis desta tela {x,y,w,h,fn}
@@ -1715,7 +1955,10 @@ function desenharHub() {
   /* topo: fragmentos */
   ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   ctx.fillStyle = "#ffcf6b"; ctx.font = "bold 15px Sora, sans-serif";
+  const xpG = Math.round((META.vida && META.vida.xpGeral) || 0);
   ctx.fillText(`💎 ${META.save.fragmentos}`, 18, 32);
+  ctx.fillStyle = "#7fd858"; ctx.font = "bold 13px Sora, sans-serif";
+  ctx.fillText(`⚡ ${xpG} XP`, 110, 32);
   ctx.textAlign = "right";
   ctx.fillStyle = "#7d8f7f"; ctx.font = "12px Sora, sans-serif";
   ctx.fillText(`${META.save.runs} runs · recorde ${META.save.melhorTempo}s`, W - 18, 32);
@@ -1731,7 +1974,7 @@ function desenharHub() {
     if (sel) { ctx.strokeStyle = "#7fd858"; ctx.lineWidth = 1.4;
       ctx.beginPath(); ctx.roundRect(x+2, abaY, larg-4, abaH, 9); ctx.stroke(); }
     ctx.fillStyle = sel ? "#7fd858" : "#8a9d8f";
-    ctx.font = `${sel?"bold ":""}11px Sora, sans-serif`;
+    ctx.font = `${sel?"bold ":""}10px Sora, sans-serif`;
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText(nome, x + larg/2, abaY + abaH/2);
     HUB.toques.push({ x:x, y:abaY, w:larg, h:abaH, fn:()=>{ HUB.aba=i; HUB.scroll=0; som("xp"); } });
@@ -1746,10 +1989,11 @@ function desenharHub() {
   const y = topo + 6;
   let fim = y;
   if (HUB.aba === 0) fim = abaJogar(y);
-  if (HUB.aba === 1) fim = abaEscolas(y);
-  if (HUB.aba === 2) fim = abaPoderes(y);
-  if (HUB.aba === 3) fim = abaArmas(y);
-  if (HUB.aba === 4) fim = abaVisual(y);
+  if (HUB.aba === 1) fim = abaAscensao(y);
+  if (HUB.aba === 2) fim = abaEscolas(y);
+  if (HUB.aba === 3) fim = abaPoderes(y);
+  if (HUB.aba === 4) fim = abaArmas(y);
+  if (HUB.aba === 5) fim = abaVisual(y);
   ctx.restore();
   HUB.scrollMax = Math.max(0, fim - H + 30);
 
@@ -1787,7 +2031,11 @@ function abaJogar(y) {
   cartao(M, y, w, 92, "#7fd858", "rgba(127,216,88,.14)");
   ctx.textAlign = "center"; ctx.textBaseline = "middle";
   ctx.fillStyle = "#7fd858"; ctx.font = "bold 26px Sora, sans-serif";
-  ctx.fillText("▶  JOGAR", W/2, y + 46);
+  ctx.fillText("▶  JOGAR", W/2, y + 38);
+  ctx.fillStyle = ASC.nivel > 0 ? "#ff9c6b" : "#6f8274";
+  ctx.font = "bold 12px Sora, sans-serif";
+  ctx.fillText(rotuloAscensao(ASC.nivel), W/2, y + 66);
+  ctx.textBaseline = "alphabetic";
   toqueVisivel(M, y, w, 92, () => { HUB.aberto = false; reiniciar(); });
   y += 108;
 
@@ -1872,6 +2120,71 @@ function abaJogar(y) {
       ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
       y += 54;
     });
+  }
+  return y;
+}
+
+/* ——— ABA ASCENSÃO ——— */
+function abaAscensao(y) {
+  const M = 18, w = W - M*2;
+  const s = META.save;
+  ctx.textAlign = "left"; ctx.fillStyle = "#8a9d8f"; ctx.font = "12px Sora, sans-serif";
+  y = textoQuebrado("Vença para liberar o próximo nível. Cada um acrescenta uma regra permanente — e as recompensas crescem junto.", M, y + 4, w, 17) + 10;
+
+  // ainda sem vitória: explica como liberar
+  if (!(s.vitorias || 0)) {
+    cartao(M, y, w, 52, "#ffcf6b", "rgba(255,207,107,.08)");
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#ffcf6b"; ctx.font = "bold 12px Sora, sans-serif";
+    ctx.fillText("nenhuma vitória ainda", M + 14, y + 18);
+    ctx.fillStyle = "#8a9d8f"; ctx.font = "11px Sora, sans-serif";
+    ctx.fillText("derrote o Colosso (2º chefe) para liberar a Ascensão 1", M + 14, y + 36);
+    ctx.textBaseline = "alphabetic";
+    y += 62;
+  }
+
+  // resumo
+  cartao(M, y, w, 58, "#ff9c6b", "rgba(255,156,107,.10)");
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#ff9c6b"; ctx.font = "bold 15px Sora, sans-serif";
+  ctx.fillText(rotuloAscensao(s.ascensao || 0), M + 16, y + 22);
+  ctx.fillStyle = "#8a9d8f"; ctx.font = "11px Sora, sans-serif";
+  ctx.fillText(`liberado até ${s.ascensaoMax || 0} de ${ASCENSOES.length} · ${s.vitorias || 0} vitórias`, M + 16, y + 42);
+  ctx.textAlign = "right";
+  ctx.fillStyle = "#ffcf6b"; ctx.font = "bold 13px Sora, sans-serif";
+  ctx.fillText(`recompensa ×${bonusRecompensa(s.ascensao||0).toFixed(2)}`, W - M - 14, y + 22);
+  ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  y += 70;
+
+  // nível 0
+  const linha = (n, titulo, desc, liberado, atual, venceu) => {
+    const h = 52;
+    cartao(M, y, w, h, atual ? "#ff9c6b" : (liberado ? "rgba(255,255,255,.14)" : "rgba(255,255,255,.05)"),
+           atual ? "rgba(255,156,107,.12)" : "rgba(255,255,255,.04)");
+    ctx.globalAlpha = liberado ? 1 : .35;
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = atual ? "#ff9c6b" : "#cfe0d2";
+    ctx.font = "bold 13px Sora, sans-serif";
+    ctx.fillText(titulo, M + 14, y + 19);
+    ctx.fillStyle = "#8a9d8f"; ctx.font = "11px Sora, sans-serif";
+    ctx.fillText(desc, M + 14, y + 36);
+    ctx.textAlign = "right";
+    if (atual) { ctx.fillStyle = "#ff9c6b"; ctx.font = "bold 10px Sora, sans-serif"; ctx.fillText("JOGANDO", W - M - 14, y + 19); }
+    else if (!liberado) { ctx.fillStyle = "#6f8274"; ctx.font = "12px Sora, sans-serif"; ctx.fillText("🔒", W - M - 14, y + 19); }
+    if (venceu) { ctx.fillStyle = "#7fd858"; ctx.font = "10px Sora, sans-serif"; ctx.fillText(`🏆 ${venceu}`, W - M - 14, y + 36); }
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+    ctx.globalAlpha = 1;
+    if (liberado) toqueVisivel(M, y, w, h, () => {
+      escolherAscensao(n); avisar(rotuloAscensao(n) + " selecionada"); som("xp");
+    });
+    y += h + 7;
+  };
+
+  const vp = s.vitoriaPorNivel || {};
+  linha(0, "Ascensão 0", "o jogo como foi desenhado", true, (s.ascensao||0) === 0, vp[0]);
+  for (const a of ASCENSOES) {
+    const liberado = a.n <= (s.ascensaoMax || 0);
+    linha(a.n, `Ascensão ${a.n} · ${a.nome}`, a.desc, liberado, (s.ascensao||0) === a.n, vp[a.n]);
   }
   return y;
 }
@@ -1984,52 +2297,102 @@ function abaPoderes(y) {
 /* ——— ABA ARMAS ——— */
 function abaArmas(y) {
   const M = 18, w = W - M*2;
-  ctx.textAlign = "left";
-  ctx.fillStyle = "#8a9d8f"; ctx.font = "12px Sora, sans-serif";
-  y = textoQuebrado("Use uma arma para ganhar maestria com ela. Ao encher a barra, você escolhe um caminho — e é permanente.", M, y + 4, w, 17) + 12;
+  const vida = META.vida || { xpGeral:0, passadasPorCat:{} };
+  const ppc = vida.passadasPorCat || {};
+  const libs = P.armasLiberadas(vida.xpGeral || 0);
 
-  for (const arma of ["espada", "varinha", "martelo"]) {
-    const est = P.estadoArma(META.save, arma);
-    const at = P.armaAtual(META.save, arma);
-    const arv = P.ARVORES[arma];
-    const h = 104;
-    cartao(M, y, w, h, est.tier === 3 ? "#ffcf6b" : "rgba(255,255,255,.10)");
+  ctx.textAlign = "left"; ctx.fillStyle = "#8a9d8f"; ctx.font = "12px Sora, sans-serif";
+  y = textoQuebrado("Armas chegam pelo XP geral (qualquer tarefa da vida). Já a evolução de cada uma vem das passadas daquela categoria.", M, y + 4, w, 17) + 10;
+
+  // próxima arma a destravar
+  const prox = P.proximaArma(vida.xpGeral || 0);
+  if (prox) {
+    cartao(M, y, w, 66, "#7fd858", "rgba(127,216,88,.08)");
     ctx.textBaseline = "middle";
-    ctx.font = "26px sans-serif"; ctx.fillStyle = "#fff";
-    ctx.fillText(at.icone, M + 16, y + 28);
-    ctx.font = "bold 15px Sora, sans-serif"; ctx.fillStyle = "#fff";
-    ctx.fillText(at.nome, M + 54, y + 21);
-    ctx.font = "12px Sora, sans-serif"; ctx.fillStyle = "#8a9d8f";
-    ctx.fillText(at.desc, M + 54, y + 39);
-    ctx.textAlign = "right"; ctx.font = "11px Sora, sans-serif";
-    ctx.fillStyle = est.tier === 3 ? "#ffcf6b" : "#7d8f7f";
-    ctx.fillText(`Tier ${est.tier}`, W - M - 14, y + 21);
+    ctx.font = "24px sans-serif"; ctx.fillStyle = "#fff";
+    ctx.globalAlpha = .5; ctx.fillText(prox.icone, M + 14, y + 22); ctx.globalAlpha = 1;
+    ctx.font = "bold 13px Sora, sans-serif"; ctx.fillStyle = "#7fd858";
+    ctx.fillText(`próxima: ${prox.nome}`, M + 48, y + 20);
+    ctx.textAlign = "right"; ctx.font = "11px Sora, sans-serif"; ctx.fillStyle = "#8a9d8f";
+    ctx.fillText(`faltam ${Math.ceil(prox.falta)} XP`, W - M - 14, y + 20);
     ctx.textAlign = "left";
-
-    // barra de maestria
-    ctx.fillStyle = "rgba(255,255,255,.08)";
-    ctx.fillRect(M + 16, y + 58, w - 32, 7);
-    ctx.fillStyle = est.tier === 3 ? "#ffcf6b" : "#7fd858";
-    ctx.fillRect(M + 16, y + 58, (w - 32) * est.pct, 7);
+    ctx.fillStyle = "rgba(255,255,255,.08)"; ctx.fillRect(M + 14, y + 38, w - 28, 7);
+    ctx.fillStyle = "#7fd858"; ctx.fillRect(M + 14, y + 38, (w - 28) * prox.pct, 7);
     ctx.font = "10px Sora, sans-serif"; ctx.fillStyle = "#6f8274";
-    ctx.fillText(est.prox ? `${Math.round(est.maestria)} / ${est.prox} de maestria` : "evolução máxima", M + 16, y + 78);
-
-    // caminho trilhado
-    ctx.textAlign = "right"; ctx.fillStyle = "#6f8274"; ctx.font = "10px Sora, sans-serif";
-    const trilha = est.ramo
-      ? `${arv.base.nome} › ${arv.ramos[est.ramo].nome}${est.final ? " › " + arv.ramos[est.ramo].finais[est.final].nome : ""}`
-      : `${Object.keys(arv.ramos).length} caminhos possíveis`;
-    ctx.fillText(trilha, W - M - 14, y + 78);
-    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
-    y += h + 10;
+    ctx.textBaseline = "alphabetic";
+    ctx.fillText("qualquer passada no LIFE conta", M + 14, y + 60);
+    y += 78;
   }
 
-  // contagem de conteúdo
-  ctx.fillStyle = "#5f7264"; ctx.font = "11px Sora, sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("27 formas finais possíveis no total", W/2, y + 14);
-  ctx.textAlign = "left";
-  return y + 30;
+  // vigor
+  const vig = P.vigorDe(vida.xpGeral || 0);
+  cartao(M, y, w, 44);
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#8be9ff"; ctx.font = "bold 12px Sora, sans-serif";
+  ctx.fillText(`⚡ Vigor  −${Math.round(vig*100)}% de espera entre golpes`, M + 14, y + 16);
+  ctx.fillStyle = "#6f8274"; ctx.font = "10px Sora, sans-serif";
+  ctx.fillText(vig >= P.VIGOR.teto ? "no máximo" : `próximo ganho em ${P.VIGOR.bloco - Math.floor((vida.xpGeral||0) % P.VIGOR.bloco)} XP`, M + 14, y + 33);
+  ctx.textBaseline = "alphabetic";
+  y += 56;
+
+  // cada arma
+  ctx.fillStyle = "#7d8f7f"; ctx.font = "11px Sora, sans-serif";
+  ctx.fillText("SUAS ARMAS", M, y); y += 12;
+
+  for (const def of P.ARMAS_JOGO) {
+    const liberada = libs.includes(def.id);
+    const temArvore = !!P.ARVORES[def.id];
+    const est = temArvore ? P.estadoArmaVida(META.save, def.id, ppc) : null;
+    const at = (temArvore && liberada) ? P.armaAtual(META.save, def.id) : null;
+    const h = def.categoria ? 96 : 58;
+    cartao(M, y, w, h,
+      !liberada ? "rgba(255,255,255,.06)" : (est && est.tier===3 ? "#ffcf6b" : "rgba(255,255,255,.14)"),
+      liberada ? "rgba(255,255,255,.045)" : "rgba(255,255,255,.02)");
+    ctx.globalAlpha = liberada ? 1 : .35;
+    ctx.textBaseline = "middle";
+    ctx.font = "24px sans-serif"; ctx.fillStyle = "#fff";
+    ctx.fillText(at ? at.icone : def.icone, M + 14, y + 24);
+    ctx.font = "bold 14px Sora, sans-serif"; ctx.fillStyle = "#fff";
+    ctx.fillText(at ? at.nome : def.nome, M + 48, y + 18);
+    ctx.font = "11px Sora, sans-serif"; ctx.fillStyle = "#8a9d8f";
+    ctx.fillText(at ? at.desc : def.desc, M + 48, y + 35);
+
+    ctx.textAlign = "right";
+    if (!liberada) {
+      ctx.fillStyle = "#6f8274"; ctx.font = "11px Sora, sans-serif";
+      ctx.fillText(`🔒 ${def.xp} XP`, W - M - 14, y + 18);
+    } else if (est) {
+      ctx.fillStyle = est.tier===3 ? "#ffcf6b" : "#7d8f7f"; ctx.font = "11px Sora, sans-serif";
+      ctx.fillText(`Tier ${est.tier}`, W - M - 14, y + 18);
+    }
+    ctx.textAlign = "left";
+
+    // barra de maestria (só para armas com categoria e árvore)
+    if (def.categoria) {
+      ctx.font = "10px Sora, sans-serif";
+      if (!temArvore) {
+        ctx.fillStyle = "#6f8274";
+        ctx.fillText(`${def.categoria} · árvore de evolução ainda não criada`, M + 14, y + 62);
+      } else {
+        ctx.fillStyle = "rgba(255,255,255,.08)"; ctx.fillRect(M + 14, y + 56, w - 28, 7);
+        ctx.fillStyle = est.tier===3 ? "#ffcf6b" : "#c9a7ff";
+        ctx.fillRect(M + 14, y + 56, (w - 28) * est.pct, 7);
+        ctx.fillStyle = "#6f8274";
+        ctx.fillText(est.prox
+          ? `${def.categoria}: ${est.passadas}/${est.prox} passadas`
+          : `${def.categoria}: evolução máxima`, M + 14, y + 78);
+        if (est.pendente) {
+          ctx.textAlign = "right"; ctx.fillStyle = "#ffcf6b"; ctx.font = "bold 10px Sora, sans-serif";
+          ctx.fillText("⬆ pode evoluir!", W - M - 14, y + 78);
+          ctx.textAlign = "left";
+        }
+      }
+    }
+    ctx.textBaseline = "alphabetic";
+    ctx.globalAlpha = 1;
+    y += h + 9;
+  }
+  return y;
 }
 
 /* ——— ABA VISUAL ——— */
@@ -2132,6 +2495,7 @@ function hubUp(q) {
   }
 }
 
+
 /* ==========================================================
    PROTÓTIPO DE COMBATE — teste de "game feel"
    Objetivo: descobrir se bater em coisa aqui é GOSTOSO.
@@ -2192,6 +2556,77 @@ const TETO_POS_MINICHEFE = 50;
 
 /* ---------- ARMAS: cada uma precisa ter um "peso" próprio ---------- */
 const ARMAS = {
+  soco: {
+    nome: "Soco", icone: "👊", cor: "#e8d9c5",
+    cd: 1.10, dano: 8, alcance: 45, arco: 1.2,
+    knock: 120, shake: 2, hitstop: 0.03,
+    desc: "lento, mas é o que você tem",
+    atacar(p) {
+      const ang = p.mira;
+      efeitos.push({ tipo:"arco", x:p.x, y:p.y, ang, r:this.alcance, arco:this.arco, vida:.14, max:.14, cor:this.cor });
+      let n = 0;
+      for (const e of alvosNoArco(p, ang, this.alcance, this.arco)) {
+        bater(e, this.dano, Math.atan2(e.y-p.y, e.x-p.x), this.knock, "soco");
+        n++;
+      }
+      if (n) { G.shake = Math.max(G.shake, this.shake); G.hitstop = Math.max(G.hitstop, this.hitstop); }
+      som(n ? "hit" : "swing");
+    }
+  },
+  faca: {
+    nome: "Faca de cozinha", icone: "🔪", cor: "#dfe9ff",
+    cd: 0.26, dano: 11, alcance: 60, arco: 1.0,
+    knock: 90, shake: 1.5, hitstop: 0.02,
+    desc: "rápida, faz sangrar",
+    atacar(p) {
+      const ang = p.mira;
+      efeitos.push({ tipo:"arco", x:p.x, y:p.y, ang, r:this.alcance, arco:this.arco, vida:.10, max:.10, cor:this.cor });
+      let n = 0;
+      for (const e of alvosNoArco(p, ang, this.alcance, this.arco)) {
+        bater(e, this.dano, Math.atan2(e.y-p.y, e.x-p.x), this.knock, "faca");
+        // sangramento acumulativo — a assinatura da faca
+        e.sangra = Math.min(8, (e.sangra || 0) + 1);
+        e.sangraT = 4;
+        n++;
+      }
+      if (n) { G.shake = Math.max(G.shake, this.shake); G.hitstop = Math.max(G.hitstop, this.hitstop); }
+      som(n ? "hit" : "swing");
+    }
+  },
+  arco: {
+    nome: "Arco", icone: "🏹", cor: "#c9a7ff",
+    cd: 0.55, dano: 34, vel: 760, knock: 150, shake: 2, hitstop: 0.025,
+    desc: "alcance longo, premia o ritmo",
+    atacar(p) {
+      // cadência musical: acertar em compasso regular aumenta o dano
+      const agora = G.t;
+      const inter = agora - (p.ultimoArco || 0);
+      p.ultimoArco = agora;
+      if (Math.abs(inter - this.cd) < 0.18) p.compasso = Math.min(10, (p.compasso || 0) + 1);
+      else p.compasso = 0;
+      const mult = 1 + (p.compasso || 0) * 0.12;
+      projeteis.push({
+        x: p.x + Math.cos(p.mira)*24, y: p.y + Math.sin(p.mira)*24,
+        vx: Math.cos(p.mira)*this.vel, vy: Math.sin(p.mira)*this.vel,
+        r: 6, dano: this.dano * mult, vida: 1.6, perfura: 2, atingidos: [],
+        cor: this.cor, knock: this.knock, arma: this, flecha: true,
+      });
+      if (p.compasso > 2) efeitos.push({ tipo:"anel", x:p.x, y:p.y, r:14, rMax:34, vida:.2, max:.2, cor:this.cor });
+      som("magia");
+    }
+  },
+  apito: {
+    nome: "Apito de treinador", icone: "🎽", cor: "#ffcf6b",
+    cd: 1.40, dano: 0, knock: 0, shake: 1, hitstop: 0,
+    desc: "invoca aliados que lutam por você",
+    atacar(p) {
+      if (!ATIVOS.aliados) ATIVOS.aliados = [];
+      if (ATIVOS.aliados.length >= 3) return;
+      ATIVOS.aliados.push({ x:p.x + rnd(-24,24), y:p.y + rnd(-24,24), vx:0, vy:0, t:14, cd:0 });
+      efeitos.push({ tipo:"anel", x:p.x, y:p.y, r:10, rMax:56, vida:.3, max:.3, cor:this.cor });
+      som("xp");
+    }
+  },
   espada: {
     nome: "Espada", icone: "🗡️", cor: "#eaf6ff",
     cd: 0.34, dano: 22, alcance: 96, arco: 2.4,
@@ -2217,7 +2652,7 @@ const ARMAS = {
     }
   },
   varinha: {
-    nome: "Varinha", icone: "🪄", cor: "#8be9ff",
+    nome: "Tubo de ensaio", icone: "🧪", cor: "#8be9ff",
     cd: 0.26, dano: 15, vel: 700, knock: 90, shake: 1.2, hitstop: 0.02,
     desc: "atinge de longe, perfura",
     atacar(p) { if (typeof atacarVarinha === "function") return atacarVarinha(p, this); this.padrao(p); },
@@ -2233,7 +2668,7 @@ const ARMAS = {
     }
   },
   martelo: {
-    nome: "Martelo", icone: "🔨", cor: "#ffcf6b",
+    nome: "Barra olímpica", icone: "🏋️", cor: "#ffcf6b",
     cd: 0.95, dano: 96, alcance: 100, arco: 1.2,
     knock: 620, shake: 11, hitstop: 0.11,
     desc: "esmaga o graúdo",
@@ -2259,7 +2694,15 @@ const ARMAS = {
     }
   },
 };
-const ORDEM_ARMAS = ["espada", "varinha", "martelo"];
+const TODAS_ARMAS = ["soco", "faca", "martelo", "varinha", "apito", "arco", "espada"];
+let ORDEM_ARMAS = ["soco"];   // preenchido conforme o XP da vida real
+function atualizarArmasDisponiveis() {
+  if (typeof META === "undefined" || !META.vida) { ORDEM_ARMAS = ["soco"]; return; }
+  const libs = P.armasLiberadas(META.vida.xpGeral || 0);
+  ORDEM_ARMAS = TODAS_ARMAS.filter(a => libs.includes(a));
+  if (!ORDEM_ARMAS.length) ORDEM_ARMAS = ["soco"];
+  if (!ORDEM_ARMAS.includes(p.arma)) p.arma = ORDEM_ARMAS[0];
+}
 
 /* ---------- SUPERPODER (manual, com cooldown) ---------- */
 const SUPER = {
@@ -2349,9 +2792,12 @@ function sorteiaTipo() {
 }
 function spawnarChefe(grande) {
   const a = rnd(0, TAU), d = Math.max(W, H) * 0.6 + 90;
+  const A = (typeof ASC !== "undefined") ? ASC.mods : {};
   const base = grande
     ? { nome:"Colosso",  r:56, hp:1750, vel:44, dano:26, xp:120, cor:"#ff6b6b" }
     : { nome:"Vigília",  r:38, hp:780,  vel:56, dano:18, xp:60,  cor:"#d98cff" };
+  base.hp *= (1 + (A.hpChefe || 0)) * (grande ? 1 + (A.hpChefeFinal || 0) : 1);
+  base.dano *= 1 + (A.danoInimigo || 0);
   const e = {
     x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d,
     vx:0, vy:0, r:base.r, cor:base.cor, nome:base.nome,
@@ -2372,22 +2818,41 @@ function spawnarChefe(grande) {
 function atualizarFases(dt) {
   if (FASE.aviso > 0) FASE.aviso -= dt;
 
+  /* chefe se regenera (ascensão 17) */
+  if (FASE.chefe && !FASE.chefe.morto && typeof ASC !== "undefined" && ASC.mods.chefeRegen) {
+    FASE.chefe.regenT = (FASE.chefe.regenT || 0) + dt;
+    if (FASE.chefe.regenT > 1) {
+      FASE.chefe.regenT = 0;
+      FASE.chefe.hp = Math.min(FASE.chefe.hpMax, FASE.chefe.hp + FASE.chefe.hpMax * .012);
+    }
+  }
+
   /* chefe morreu? */
   if (FASE.chefe && FASE.chefe.morto) {
     const eraGrande = FASE.chefe.grande;
     FASE.chefe = null;
     if (eraGrande) {
       FASE.vitoria = true; G.over = true;
+      if (typeof venceuNaAscensao === "function") venceuNaAscensao();
       G.shake = 20;
+      efeitos.push({ tipo:"flash", vida:.3, max:.3 });
+      if (typeof fimDeRun === "function") fimDeRun();
+      return;
+    }
+    /* com poucas armas, vencer o mini-chefe JÁ encerra a run */
+    if (FASE.runCurta) {
+      FASE.vitoria = true; G.over = true;
+      if (typeof venceuNaAscensao === "function") venceuNaAscensao();
+      G.shake = 18;
       efeitos.push({ tipo:"flash", vida:.3, max:.3 });
       if (typeof fimDeRun === "function") fimDeRun();
       return;
     }
     /* pós mini-chefe: a horda cresce */
     FASE.n = 2;
-    FASE.multSpawn = AUMENTO_POS_MINICHEFE;
-    FASE.tetoInimigos = TETO_POS_MINICHEFE;
-    FASE.proximoEvento = G.run + 50;
+    FASE.multSpawn = AUMENTO_POS_MINICHEFE * (1 + ((typeof ASC !== 'undefined' ? ASC.mods.spawnMult : 0) || 0));
+    FASE.tetoInimigos = Math.round(TETO_POS_MINICHEFE * (1 + ((typeof ASC !== 'undefined' ? ASC.mods.tetoExtra : 0) || 0)));
+    FASE.proximoEvento = G.run + 50 - ((typeof ASC !== 'undefined' ? ASC.mods.chefeAntecipa : 0) || 0);
     FASE.aviso = 2.6;
     FASE.avisoTxt = "a horda aumenta!";
     efeitos.push({ tipo:"anel", x:p.x, y:p.y, r:20, rMax:400, vida:.6, max:.6, cor:"#ff9c6b", grosso:true });
@@ -2397,7 +2862,7 @@ function atualizarFases(dt) {
   /* hora do próximo chefe */
   if (!FASE.chefe && !FASE.vitoria && G.run >= FASE.proximoEvento) {
     if (FASE.n === 1) spawnarChefe(false);
-    else if (FASE.n === 2) { FASE.n = 3; spawnarChefe(true); }
+    else if (FASE.n === 2 && !FASE.runCurta) { FASE.n = 3; spawnarChefe(true); }
   }
 }
 
@@ -2406,11 +2871,19 @@ function spawnar() {
   // nasce fora da tela, em volta do jogador
   const a = rnd(0, TAU), d = Math.max(W, H) * 0.62 + rnd(40, 140);
   const esc = 1 + G.run * 0.02;
+  const A = (typeof ASC !== "undefined") ? ASC.mods : {};
+  const elite = (A.eliteChance || 0) > 0 && Math.random() < A.eliteChance;
+  const multHp  = esc * (1 + (A.hpInimigo || 0)) * (elite ? 2.4 : 1);
+  const multVel = (1 + (A.velInimigo || 0)) * (elite ? 1.15 : 1);
+  const multDan = (1 + (A.danoInimigo || 0)) * (elite ? 1.5 : 1);
   inimigos.push({
     x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d,
-    vx: 0, vy: 0, r: t.r, cor: t.cor, nome: t.nome,
-    hp: t.hp * esc, hpMax: t.hp * esc, vel: t.vel, dano: t.dano, xp: t.xp,
+    vx: 0, vy: 0, r: t.r * (elite ? 1.3 : 1), cor: elite ? "#ffd36b" : t.cor,
+    nome: elite ? "Elite " + t.nome : t.nome,
+    hp: t.hp * multHp, hpMax: t.hp * multHp,
+    vel: t.vel * multVel, dano: t.dano * multDan, xp: t.xp * (elite ? 3 : 1),
     flash: 0, atordoado: 0, morto: false, squash: 0, fase: rnd(0, TAU),
+    elite,
   });
 }
 
@@ -2459,6 +2932,13 @@ function matar(e) {
     particulas.push({ x: e.x, y: e.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: rnd(2, 5), vida: rnd(.25, .6), max: .6, cor: e.cor });
   }
   efeitos.push({ tipo: "onda", x: e.x, y: e.y, r: e.r, rMax: e.r * 2.8, vida: .22, max: .22, cor: e.cor });
+  if (typeof ASC !== "undefined" && ASC.mods.explodeAoMorrer && !e.chefe) {
+    efeitos.push({ tipo:"onda", x:e.x, y:e.y, r:8, rMax:64, vida:.28, max:.28, cor:"#ff6b6b" });
+    if (p.inv <= 0 && dist2(e, p) < 64*64) {
+      p.hp -= 7; p.inv = .5; G.shake = Math.max(G.shake, 5); som("dano");
+      if (p.hp <= 0) { p.hp = 0; G.over = true; if (typeof fimDeRun === "function") fimDeRun(); }
+    }
+  }
   const n = e.xp > 6 ? 3 : e.xp > 3 ? 2 : 1;
   for (let i = 0; i < n; i++) {
     orbes.push({ x: e.x + rnd(-10, 10), y: e.y + rnd(-10, 10), vx: rnd(-70, 70), vy: rnd(-70, 70), r: 5, xp: Math.ceil(e.xp / n), vida: 14 });
@@ -2536,8 +3016,10 @@ addEventListener("keydown", e => {
 addEventListener("keyup", e => { teclas[e.key.toLowerCase()] = false; });
 
 function nomeArma(id) {
-  if (typeof META !== "undefined" && META.save) { const a = P.armaAtual(META.save, id); return a; }
-  return ARMAS[id];
+  // armas sem árvore de evolução (soco, faca, arco, apito) usam a definição base
+  if (typeof META !== "undefined" && META.save && P.ARVORES[id]) return P.armaAtual(META.save, id);
+  const def = P.ARMAS_JOGO.find(a => a.id === id);
+  return def ? { ...ARMAS[id], nome: def.nome, icone: def.icone, desc: def.desc } : ARMAS[id];
 }
 function trocarArma(i) {
   const nova = ORDEM_ARMAS[i];
@@ -2618,9 +3100,12 @@ function update(dt) {
   /* ataque automático */
   const arma = ARMAS[p.arma];
   p.cd -= dt;
-  if (p.cd <= 0 && alvo) {
-    const alcanceOk = arma.alcance ? melhor < Math.pow(arma.alcance + 40, 2) : melhor < Math.pow(520, 2);
-    if (alcanceOk) { arma.atacar(p); p.cd = arma.cd / ((typeof multCadencia==='function')?multCadencia():1);
+  if (p.cd <= 0 && (alvo || p.arma === 'apito')) {
+    const alcanceOk = p.arma === 'apito' ? true : (arma.alcance ? melhor < Math.pow(arma.alcance + 40, 2) : melhor < Math.pow(640, 2));
+    if (alcanceOk) {
+      arma.atacar(p);
+      const vig = (typeof META !== "undefined" && META.vida) ? P.vigorDe(META.vida.xpGeral || 0) : 0;
+      p.cd = (arma.cd * (1 - vig)) / ((typeof multCadencia==='function')?multCadencia():1);
       if (typeof META !== 'undefined' && META.mod.eco && Math.random() < 0.2) p.cd *= 0.15; }
   }
   if (p.superCd > 0) p.superCd -= dt;
@@ -2646,6 +3131,13 @@ function update(dt) {
       e.vy = lerp(e.vy, Math.sin(a) * e.vel, dt * 3);
     }
     if (e.lento > 0) { e.lento -= dt; e.vx *= 0.55; e.vy *= 0.55; }
+    if (e.sangra > 0 && e.sangraT > 0) {
+      e.sangraT -= dt;
+      e.hp -= e.sangra * 2.2 * dt;
+      if (Math.random() < dt * e.sangra * 1.5)
+        particulas.push({x:e.x+rnd(-6,6),y:e.y,vx:rnd(-20,20),vy:rnd(10,40),r:2,vida:.35,max:.35,cor:"#ff5c5c"});
+      if (e.hp <= 0 && !e.morto) matar(e);
+    }
     if (e.veneno > 0) { e.veneno -= dt; e.hp -= (e.venenoDano || 3) * dt;
       if (Math.random() < dt*6) particulas.push({x:e.x+rnd(-6,6),y:e.y,vx:0,vy:-30,r:2,vida:.4,max:.4,cor:"#9cff8a"});
       if (e.hp <= 0 && !e.morto) matar(e); }
@@ -2719,7 +3211,8 @@ function update(dt) {
     o.x += o.vx * dt; o.y += o.vy * dt;
     if (d < p.r + 8) {
       o.vida = 0;
-      p.xp += o.xp * (typeof META !== "undefined" && META.mod.colheita ? 2 : 1);
+      const ascXp = 1 + ((typeof ASC !== "undefined" ? ASC.mods.xpMult : 0) || 0);
+      p.xp += o.xp * (typeof META !== "undefined" && META.mod.colheita ? 2 : 1) * ascXp;
       som("xp");
       if (typeof META !== "undefined" && META.mod.orbeVoraz) {
         efeitos.push({ tipo:"onda", x:p.x, y:p.y, r:8, rMax:90, vida:.22, max:.22, cor:"#7fd858" });
@@ -2727,7 +3220,7 @@ function update(dt) {
           if (q.hp<=0 && !q.morto) matar(q); } }
       }
       if (p.xp >= p.xpProx) {
-        p.xp -= p.xpProx; p.nivel++; p.xpProx = Math.round(p.xpProx * 1.45);
+        p.xp -= p.xpProx; p.nivel++; p.xpProx = Math.round(p.xpProx * 1.45 * (1 + ((typeof ASC !== 'undefined' ? ASC.mods.custoNivel : 0) || 0)));
         p.hpMax += 8; p.hp = Math.min(p.hpMax, p.hp + 18);
         efeitos.push({ tipo: "anel", x: p.x, y: p.y, r: 20, rMax: 120, vida: .45, max: .45, cor: "#ffe08a", grosso: true });
         G.shake = Math.max(G.shake, 4);
@@ -2755,6 +3248,29 @@ function update(dt) {
   /* superpoderes contínuos (torres, drones, auras, dash) */
   if (typeof atualizarAtivos === "function") atualizarAtivos(dt);
   if (typeof atualizarExtras === "function") atualizarExtras(dt);
+
+  /* aliados invocados pelo apito */
+  if (ATIVOS.aliados && ATIVOS.aliados.length) {
+    for (const al of ATIVOS.aliados) {
+      al.t -= dt; al.cd -= dt;
+      const alvo = inimigoMaisProximo(al);
+      if (alvo) {
+        const a = Math.atan2(alvo.y-al.y, alvo.x-al.x);
+        al.vx = lerp(al.vx, Math.cos(a)*230, dt*4);
+        al.vy = lerp(al.vy, Math.sin(a)*230, dt*4);
+        if (dist2(al, alvo) < Math.pow(alvo.r+16,2) && al.cd <= 0) {
+          bater(alvo, 26, a, 200, "apito");
+          al.cd = .7;
+          efeitos.push({ tipo:"arco", x:al.x, y:al.y, ang:a, r:34, arco:1.4, vida:.12, max:.12, cor:"#ffcf6b" });
+        }
+      } else {
+        al.vx = lerp(al.vx, (p.x-al.x)*2, dt*3);
+        al.vy = lerp(al.vy, (p.y-al.y)*2, dt*3);
+      }
+      al.x += al.vx*dt; al.y += al.vy*dt;
+    }
+    ATIVOS.aliados = ATIVOS.aliados.filter(a => a.t > 0);
+  }
 
   /* meta: escudo regenera, frenesi decai */
   if (typeof META !== "undefined") {
@@ -2821,6 +3337,14 @@ function desenhar() {
 
   if (typeof desenharAtivos === "function") desenharAtivos();
   if (typeof desenharExtras === "function") desenharExtras();
+  if (ATIVOS.aliados) for (const al of ATIVOS.aliados) {
+    ctx.fillStyle = "#ffcf6b";
+    ctx.beginPath(); ctx.arc(al.x, al.y, 9, 0, TAU); ctx.fill();
+    ctx.fillStyle = "#0d1210"; ctx.font = "9px sans-serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("★", al.x, al.y + 1);
+    ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
+  }
 
   // inimigos
   for (const e of inimigos) {
@@ -2847,6 +3371,12 @@ function desenhar() {
       ctx.fillRect(e.x - w / 2, e.y - e.r - 11, w, h);
       ctx.fillStyle = "#ff6b6b";
       ctx.fillRect(e.x - w / 2, e.y - e.r - 11, w * clamp(e.hp / e.hpMax, 0, 1), h);
+    }
+    if (e.elite) {
+      ctx.strokeStyle = "#ffd36b"; ctx.lineWidth = 2;
+      ctx.globalAlpha = .6 + Math.sin(G.t * 6) * .3;
+      ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 5, 0, TAU); ctx.stroke();
+      ctx.globalAlpha = 1;
     }
     if (e.chefe) {
       ctx.strokeStyle = e.cor; ctx.lineWidth = 2;
@@ -2971,6 +3501,11 @@ function hud() {
   ctx.fillStyle = "#fff";
   ctx.font = "bold 13px Sora, sans-serif"; ctx.textAlign = "left";
   ctx.fillText(`Nv ${p.nivel}`, 16, 54);
+  if (typeof ASC !== "undefined" && ASC.nivel > 0) {
+    ctx.fillStyle = "#ff9c6b"; ctx.font = "bold 11px Sora, sans-serif";
+    ctx.fillText(`A${ASC.nivel}`, 16, 68);
+    ctx.fillStyle = "#fff"; ctx.font = "bold 13px Sora, sans-serif";
+  }
   ctx.textAlign = "center";
   const restante = FASE.chefe ? null : Math.max(0, Math.ceil(FASE.proximoEvento - G.run));
   ctx.fillText(restante !== null ? `${Math.floor(G.run)}s  ·  próximo em ${restante}s` : `${Math.floor(G.run)}s`, W / 2, 54);
@@ -3085,6 +3620,23 @@ function hud() {
     ctx.fillStyle = FASE.vitoria ? "#7fd858" : "#fff";
     ctx.font = "bold 30px Sora, sans-serif";
     ctx.fillText(FASE.vitoria ? "🏆 VITÓRIA" : "fim da run", W / 2, H * .3);
+    if (typeof ASC !== "undefined") {
+      if (FASE.vitoria && ASC.liberouAgora) {
+        ctx.font = "bold 14px Sora, sans-serif"; ctx.fillStyle = "#ff9c6b";
+        ctx.fillText(`⬆ Ascensão ${ASC.liberouAgora} liberada e ativada!`, W / 2, H * .3 + 48);
+        ctx.font = "11px Sora, sans-serif"; ctx.fillStyle = "#8a9d8f";
+        const a = ASCENSOES.find(x => x.n === ASC.liberouAgora);
+        if (a) ctx.fillText(`agora: ${a.desc}`, W / 2, H * .3 + 66);
+      } else if (FASE.vitoria) {
+        ctx.font = "12px Sora, sans-serif"; ctx.fillStyle = "#7fd858";
+        ctx.fillText(`vitória em ${rotuloAscensao(ASC.nivel)}`, W / 2, H * .3 + 48);
+      } else {
+        // morreu: explica por que a ascensão não subiu
+        ctx.font = "12px Sora, sans-serif"; ctx.fillStyle = "#8a9d8f";
+        const falta = FASE.n >= 3 ? "o Colosso sobreviveu" : FASE.n === 2 ? "faltou chegar no Colosso" : "faltou vencer os dois chefes";
+        ctx.fillText(`${falta} — derrote-o para subir de Ascensão`, W / 2, H * .3 + 48);
+      }
+    }
     ctx.font = "15px Sora, sans-serif";
     ctx.fillStyle = "#9db8a4";
     ctx.fillText(`${Math.floor(G.run)}s · nível ${p.nivel} · ${G.kills} derrotados`, W / 2, H * .3 + 30);
@@ -3212,18 +3764,30 @@ function telaEvolucao() {
 /* ---------- reset ---------- */
 function reiniciar() {
   inimigos = []; projeteis = []; particulas = []; efeitos = []; orbes = []; numeros = [];
-  p.x = 0; p.y = 0; p.vx = 0; p.vy = 0; p.hp = 100; p.hpMax = 100;
+  const ascHp = 100 + ((typeof ASC !== "undefined" ? ASC.mods.hpJogador : 0) || 0);
+  p.x = 0; p.y = 0; p.vx = 0; p.vy = 0; p.hp = ascHp; p.hpMax = ascHp;
   p.xp = 0; p.nivel = 1; p.xpProx = 12; p.cd = 0; p.superCd = 0; p.inv = 0;
   p.arma = "espada";
   cam.x = 0; cam.y = 0;
   G.run = 0; G.kills = 0; G.over = false; G.shake = 0; G.hitstop = 0;
   spawnT = 0;
-  FASE.n = 1; FASE.chefe = null; FASE.proximoEvento = 60;
-  FASE.multSpawn = 1; FASE.tetoInimigos = 34; FASE.vitoria = false;
+  FASE.n = 1; FASE.chefe = null; FASE.proximoEvento = 60 - ((typeof ASC !== 'undefined' ? ASC.mods.chefeAntecipa : 0) || 0);
+  FASE.multSpawn = 1 + ((typeof ASC !== 'undefined' ? ASC.mods.spawnMult : 0) || 0);
+  FASE.tetoInimigos = Math.round(34 * (1 + ((typeof ASC !== 'undefined' ? ASC.mods.tetoExtra : 0) || 0))); FASE.vitoria = false;
   FASE.aviso = 0; FASE.avisoTxt = "";
+  if (typeof atualizarArmasDisponiveis === "function") atualizarArmasDisponiveis();
+  FASE.runCurta = ORDEM_ARMAS.length <= 2;      // só soco (+1) => run de 1 chefe
+  if (FASE.runCurta) FASE.proximoEvento = 90 - ((typeof ASC !== 'undefined' ? ASC.mods.chefeAntecipa : 0) || 0);
+  if (typeof prepararAscensao === "function") prepararAscensao();
   if (typeof resetMeta === "function") resetMeta();
   if (typeof limparAtivos === "function") limparAtivos();
+  if (typeof ATIVOS !== "undefined") ATIVOS.aliados = [];
   if (typeof limparExtras === "function") limparExtras();
+  if (typeof superAtual === "function") {
+    const s1 = superAtual();
+    const cd1 = s1.cd * (1 + ((typeof ASC !== "undefined" ? ASC.mods.superCd : 0) || 0));
+    SUPER.cdMax = cd1; SUPER.cdBase = cd1;
+  }
   p.trilha = [];
 }
 
@@ -3254,10 +3818,10 @@ function frame(agora) {
 requestAnimationFrame(frame);
 
 if (typeof initMeta === "function") initMeta();
-if (typeof superAtual === "function") { const s0 = superAtual(); SUPER.cdMax = s0.cd; SUPER.cdBase = s0.cd; }
+if (typeof superAtual === "function") { const s0 = superAtual(); const cdA = s0.cd * (1 + ((typeof ASC !== "undefined" ? ASC.mods.superCd : 0) || 0)); SUPER.cdMax = cdA; SUPER.cdBase = cdA; }
 const el = document.getElementById("load");
 if (el) el.style.display = "none";
 
+
 </script>
-</body>
-</html>
+</body></html>
