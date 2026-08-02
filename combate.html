@@ -1,0 +1,3263 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>Protótipo de Combate</title>
+<meta name="theme-color" content="#0d1210" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Combate" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27512%27 height=%27512%27%3E%3Crect width=%27512%27 height=%27512%27 rx=%27110%27 fill=%27%230d1210%27/%3E%3Ctext x=%27256%27 y=%27370%27 font-size=%27300%27 text-anchor=%27middle%27%3E%E2%9A%94%EF%B8%8F%3C/text%3E%3C/svg%3E" />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;
+  -webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
+html,body{height:100%;overflow:hidden;background:#0d1210;
+  font-family:Sora,system-ui,sans-serif;overscroll-behavior:none;}
+#cv{display:block;touch-action:none;}
+#load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:#0d1210;color:#7fd858;font-size:15px;z-index:20;}
+#dica{position:fixed;top:120px;left:0;right:0;text-align:center;color:#9db8a4;
+  font-size:12px;pointer-events:none;animation:some 1s ease 7s forwards;}
+#resson{position:fixed;top:92px;left:0;right:0;display:none;justify-content:center;gap:12px;
+  font-size:11px;font-weight:600;pointer-events:none;}
+@keyframes some{to{opacity:0;}}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div id="resson"></div>
+<div id="dica">arraste para andar · toque nos ícones para trocar de arma</div>
+<div id="load">carregando…</div>
+<script>(function(){var i="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27512%27 height=%27512%27%3E%3Crect width=%27512%27 height=%27512%27 rx=%27110%27 fill=%27%230d1210%27/%3E%3Ctext x=%27256%27 y=%27370%27 font-size=%27300%27 text-anchor=%27middle%27%3E%E2%9A%94%EF%B8%8F%3C/text%3E%3C/svg%3E";var m={name:"Protótipo de Combate",short_name:"Combate",start_url:".",display:"fullscreen",orientation:"portrait",background_color:"#0d1210",theme_color:"#0d1210",icons:[{src:i,sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};var b=new Blob([JSON.stringify(m)],{type:"application/manifest+json"});var l=document.createElement("link");l.rel="manifest";l.href=URL.createObjectURL(b);document.head.appendChild(l);})();</script>
+<script>window.addEventListener("error",function(e){var l=document.getElementById("load");if(l){l.style.display="flex";l.style.color="#ff8f8f";l.textContent="Erro: "+(e.message||"");}});</script>
+<script>
+const P = (function(){ /* ==========================================================
+   PROGRESSÃO — escolas, evolução de armas, modificadores
+   e Ressonância (ligada à rotina real do LIFE Dashboard).
+
+   Filosofia:
+   - 4 relógios girando em velocidades diferentes
+   - upgrades mudam REGRAS, não só números
+   - a rotina real só ADICIONA, nunca subtrai
+   ========================================================== */
+
+/* ----------------------------------------------------------
+   ESCOLAS — todas registradas; Harmônica é a implementada.
+   Cada escola liga a uma categoria do LIFE Dashboard.
+---------------------------------------------------------- */
+const ESCOLAS = {
+  harmonica: {
+    id: "harmonica", nome: "Harmônica", icone: "🎻", cor: "#c9a7ff",
+    categoria: "Lazer e Música",
+    lema: "o ritmo é a arma",
+    implementada: true,
+    // buff passivo por dia de sequência (teto em 7)
+    ressonancia: { atributo: "cadencia", porDia: 0.05, teto: 0.35,
+      desc: "janela de cadência mais generosa e bônus de compasso maior" },
+    supers: ["acorde", "crescendo", "silencio", "sinfonia"],
+  },
+  arcana: {
+    id: "arcana", nome: "Arcana", icone: "📚", cor: "#8be9ff",
+    categoria: "Estudos",
+    lema: "saber é alcance",
+    implementada: false,
+    ressonancia: { atributo: "poderMagico", porDia: 0.04, teto: 0.28,
+      desc: "dano mágico e alcance de projéteis" },
+    supers: ["singularidade", "prisma"],
+  },
+  marcial: {
+    id: "marcial", nome: "Marcial", icone: "💪", cor: "#ff9c6b",
+    categoria: "Treinos",
+    lema: "o corpo responde",
+    implementada: false,
+    ressonancia: { atributo: "forca", porDia: 0.04, teto: 0.28,
+      desc: "dano corpo a corpo e recuo aplicado" },
+    supers: ["investida", "terremoto"],
+  },
+  vital: {
+    id: "vital", nome: "Vital", icone: "🌿", cor: "#7fd858",
+    categoria: "Bem-estar e Espiritualidade",
+    lema: "permanecer inteiro",
+    implementada: false,
+    ressonancia: { atributo: "vigor", porDia: 0.05, teto: 0.35,
+      desc: "vida máxima e regeneração" },
+    supers: ["raiz", "florescer"],
+  },
+  tatica: {
+    id: "tatica", nome: "Tática", icone: "💼", cor: "#ffcf6b",
+    categoria: "Trabalho e Consultoria",
+    lema: "deixe o sistema trabalhar",
+    implementada: false,
+    ressonancia: { atributo: "engenho", porDia: 0.04, teto: 0.28,
+      desc: "duração e dano de torres e drones" },
+    supers: ["torre", "enxame"],
+  },
+};
+
+/* ----------------------------------------------------------
+   ÁRVORES DE ARMA — cada arma ramifica em 3, e cada ramo
+   em mais 3. Total: 3 armas × 3 × 3 = 27 finais distintos.
+   Cada evolução muda COMO a arma se joga, não só o dano.
+---------------------------------------------------------- */
+const ARVORES = {
+  espada: {
+    base: { id: "espada", nome: "Espada", icone: "🗡️", cor: "#eaf6ff",
+            desc: "corta vários de perto" },
+    ramos: {
+      dupla: {
+        id: "dupla", nome: "Lâmina Dupla", icone: "⚔️", cor: "#eaf6ff",
+        desc: "golpeia frente E costas", regra: "arcoDuplo",
+        finais: {
+          tesoura:  { id:"tesoura",  nome:"Tesoura Dançante", icone:"✂️", desc:"os dois arcos se fecham e puxam inimigos", regra:"puxaAoCentro" },
+          turbilhao:{ id:"turbilhao",nome:"Turbilhão",        icone:"🌀", desc:"gira sem parar enquanto você anda",       regra:"giroContinuo" },
+          gemeas:   { id:"gemeas",   nome:"Lâminas Gêmeas",   icone:"🗡️", desc:"cada acerto dispara um segundo golpe",   regra:"golpeEco" },
+        }
+      },
+      montante: {
+        id: "montante", nome: "Montante", icone: "🔱", cor: "#dfe9ff",
+        desc: "arco de 360°, mais lento", regra: "arco360",
+        finais: {
+          ceifa:   { id:"ceifa",   nome:"Ceifa",          icone:"🌾", desc:"quanto mais inimigos no arco, mais dano", regra:"danoPorAlvo" },
+          gravidade:{id:"gravidade",nome:"Lâmina Gravítica",icone:"🕳️",desc:"o giro suga inimigos pra perto",         regra:"sucao" },
+          execucao:{ id:"execucao",nome:"Execução",       icone:"💀", desc:"mata na hora quem está com pouca vida",   regra:"executar" },
+        }
+      },
+      fantasma: {
+        id: "fantasma", nome: "Lâmina Fantasma", icone: "👻", cor: "#b9d4ff",
+        desc: "dispara onda cortante à distância", regra: "ondaCortante",
+        finais: {
+          espectro: { id:"espectro", nome:"Espectro",        icone:"🌫️", desc:"a onda atravessa tudo e volta",        regra:"bumerangue" },
+          mil:      { id:"mil",      nome:"Mil Cortes",      icone:"🎴", desc:"dispara 3 ondas em leque",             regra:"leque3" },
+          vazio:    { id:"vazio",    nome:"Corte do Vazio",  icone:"🕯️", desc:"a onda deixa uma fenda que causa dano", regra:"fenda" },
+        }
+      },
+    }
+  },
+  varinha: {
+    base: { id: "varinha", nome: "Varinha", icone: "🪄", cor: "#8be9ff",
+            desc: "atinge de longe, perfura" },
+    ramos: {
+      prismatico: {
+        id: "prismatico", nome: "Cajado Prismático", icone: "🔮", cor: "#8be9ff",
+        desc: "dispara 3 projéteis em leque", regra: "tiroTriplo",
+        finais: {
+          arcoiris: { id:"arcoiris", nome:"Arco-Íris",      icone:"🌈", desc:"cada projétil tem um efeito diferente", regra:"efeitosVariados" },
+          dispersao:{ id:"dispersao",nome:"Dispersão",      icone:"❇️", desc:"projéteis se dividem ao acertar",       regra:"divide" },
+          foco:     { id:"foco",     nome:"Foco Prismático",icone:"🔎", desc:"os 3 convergem num ponto só",           regra:"converge" },
+        }
+      },
+      orbital: {
+        id: "orbital", nome: "Orbe Orbital", icone: "🛰️", cor: "#a9c8ff",
+        desc: "projéteis orbitam você", regra: "orbita",
+        finais: {
+          anel:    { id:"anel",    nome:"Anel de Guarda", icone:"💍", desc:"orbes bloqueiam projéteis inimigos", regra:"bloqueia" },
+          satelite:{ id:"satelite",nome:"Satélites",      icone:"🌑", desc:"orbes disparam sozinhos",           regra:"orbeAtira" },
+          nova:    { id:"nova",    nome:"Nova Orbital",   icone:"☀️", desc:"orbes explodem e voltam",           regra:"orbeExplode" },
+        }
+      },
+      raio: {
+        id: "raio", nome: "Raio Contínuo", icone: "⚡", cor: "#9ee8ff",
+        desc: "feixe que perfura tudo", regra: "feixe",
+        finais: {
+          corrente:{ id:"corrente",nome:"Corrente",      icone:"🔗", desc:"o feixe salta entre inimigos",     regra:"ricochete" },
+          prisma2: { id:"prisma2", nome:"Refração",      icone:"💠", desc:"o feixe se reflete nas bordas",    regra:"reflete" },
+          desintegrar:{id:"desintegrar",nome:"Desintegrar",icone:"☄️",desc:"dano cresce enquanto mira o mesmo alvo",regra:"acumula" },
+        }
+      },
+    }
+  },
+  martelo: {
+    base: { id: "martelo", nome: "Martelo", icone: "🔨", cor: "#ffcf6b",
+            desc: "esmaga o graúdo" },
+    ramos: {
+      sismico: {
+        id: "sismico", nome: "Malho Sísmico", icone: "🌋", cor: "#ffcf6b",
+        desc: "ondas de choque no impacto", regra: "ondaChoque",
+        finais: {
+          falha:   { id:"falha",   nome:"Falha Geológica", icone:"🏔️", desc:"abre fendas que continuam causando dano", regra:"fendaChao" },
+          replica: { id:"replica", nome:"Réplica",         icone:"📳", desc:"cada impacto gera um segundo tremor",     regra:"tremorDuplo" },
+          colapso: { id:"colapso", nome:"Colapso",         icone:"🧱", desc:"inimigos atordoados recebem o dobro",     regra:"puneAtordoado" },
+        }
+      },
+      trovao: {
+        id: "trovao", nome: "Martelo Trovejante", icone: "🌩️", cor: "#ffe08a",
+        desc: "um raio cai no alvo", regra: "raioCai",
+        finais: {
+          tempestade:{id:"tempestade",nome:"Tempestade",   icone:"⛈️", desc:"raios caem sozinhos de tempos em tempos", regra:"raioAuto" },
+          condutor:  {id:"condutor",  nome:"Condutor",     icone:"🔌", desc:"o raio salta entre molhados/atordoados",  regra:"raioSalta" },
+          julgamento:{id:"julgamento",nome:"Julgamento",   icone:"⚖️", desc:"raio gigante a cada 10 acertos",         regra:"raioMaior" },
+        }
+      },
+      bigorna: {
+        id: "bigorna", nome: "Bigorna", icone: "🪨", cor: "#e8c07a",
+        desc: "arremessa e volta", regra: "arremesso",
+        finais: {
+          cometa: { id:"cometa", nome:"Cometa",       icone:"☄️", desc:"cai do céu no ponto mais cheio", regra:"quedaArea" },
+          ima:    { id:"ima",    nome:"Bigorna Ímã",  icone:"🧲", desc:"arrasta inimigos na volta",      regra:"arrasta" },
+          juggernaut:{id:"juggernaut",nome:"Juggernaut",icone:"🛡️",desc:"você fica blindado ao arremessar",regra:"blindaAoJogar" },
+        }
+      },
+    }
+  },
+};
+
+/* ----------------------------------------------------------
+   CUSTO DE MAESTRIA — calibrado para "semanas".
+   Pontos de maestria = dano causado com a arma / 12.
+---------------------------------------------------------- */
+const MAESTRIA = {
+  t2: 7000,     // primeira ramificação  (~8 dias jogando 2 runs/dia)
+  t3: 30000,    // segunda ramificação   (~36 dias jogando 2 runs/dia)
+  divisorDano: 30,
+};
+
+/* ----------------------------------------------------------
+   MODIFICADORES DE RUN — mudam REGRAS. Combinam entre si.
+   São eles que criam variedade combinatória.
+---------------------------------------------------------- */
+const MODIFICADORES = [
+  { id:"ricochete",  nome:"Ricochete",     icone:"🔁", desc:"golpes saltam para o inimigo mais próximo", raro:0 },
+  { id:"estilhaco",  nome:"Estilhaço",     icone:"💢", desc:"inimigos mortos explodem", raro:0 },
+  { id:"sanguessuga",nome:"Sanguessuga",   icone:"🩸", desc:"cura 2 de vida a cada morte", raro:0 },
+  { id:"ima",        nome:"Ímã",           icone:"🧲", desc:"raio de coleta de XP muito maior", raro:0 },
+  { id:"adrenalina", nome:"Adrenalina",    icone:"💗", desc:"quanto menos vida, mais rápido você fica", raro:0 },
+  { id:"sobrecarga", nome:"Sobrecarga",    icone:"⚡", desc:"todo 5º ataque causa o triplo", raro:0 },
+  { id:"espinhos",   nome:"Espinhos",      icone:"🌵", desc:"quem encosta em você se machuca", raro:0 },
+  { id:"eco",        nome:"Eco",           icone:"〰️", desc:"20% de chance de atacar duas vezes", raro:0 },
+  { id:"frenesi",    nome:"Frenesi",       icone:"🔥", desc:"velocidade de ataque sobe a cada morte recente", raro:0 },
+  { id:"orbeVoraz",  nome:"Orbe Voraz",    icone:"🟢", desc:"coletar XP causa dano em área", raro:0 },
+  { id:"gelo",       nome:"Geada",         icone:"❄️", desc:"acertos deixam inimigos lentos", raro:0 },
+  { id:"veneno",     nome:"Veneno",        icone:"🧪", desc:"acertos causam dano ao longo do tempo", raro:0 },
+  { id:"escudo",     nome:"Barreira",      icone:"🛡️", desc:"ganha um escudo que volta se você não apanhar", raro:0 },
+  { id:"passoLeve",  nome:"Passo Leve",    icone:"🍃", desc:"movimento mais rápido", raro:0 },
+  { id:"foco",       nome:"Foco",          icone:"🎯", desc:"superpoder recarrega mais rápido", raro:0 },
+  { id:"colheita",   nome:"Colheita",      icone:"🌾", desc:"inimigos dão mais XP", raro:0 },
+  // raros (só aparecem do nível 6 em diante)
+  { id:"tempo",      nome:"Compasso Lento",icone:"⏳", desc:"inimigos ficam mais lentos perto de você", raro:1 },
+  { id:"duplo",      nome:"Duplicata",     icone:"👥", desc:"um clone ataca junto com você", raro:1 },
+  { id:"juizo",      nome:"Juízo",         icone:"⚖️", desc:"inimigos abaixo de 15% de vida morrem na hora", raro:1 },
+  { id:"avareza",    nome:"Avareza",       icone:"💎", desc:"mais fragmentos ao fim da run", raro:1 },
+  { id:"cadencia",   nome:"Cadência",      icone:"🎵", desc:"acertar no compasso dá bônus crescente", raro:1, escola:"harmonica" },
+];
+
+/* ----------------------------------------------------------
+   SUPERPODERES — por escola. Harmônica implementada.
+---------------------------------------------------------- */
+const SUPERS = {
+  // ——— Harmônica (escola inicial) ———
+  acorde:    { id:"acorde", escola:"harmonica", nome:"Acorde", icone:"💥", cd:6,
+               desc:"onda que empurra tudo em volta", nivel:0 },
+  crescendo: { id:"crescendo", escola:"harmonica", nome:"Crescendo", icone:"📈", cd:11,
+               desc:"3 ondas seguidas, cada uma mais forte", nivel:1 },
+  silencio:  { id:"silencio", escola:"harmonica", nome:"Silêncio", icone:"🤫", cd:14,
+               desc:"congela todos por 2,5s", nivel:2 },
+  sinfonia:  { id:"sinfonia", escola:"harmonica", nome:"Sinfonia", icone:"🎼", cd:20,
+               desc:"ondas pulsam sozinhas por 8s", nivel:3 },
+  // ——— outras escolas (declaradas) ———
+  singularidade:{ id:"singularidade", escola:"arcana", nome:"Singularidade", icone:"🕳️", cd:15, desc:"buraco que suga e esmaga", nivel:0 },
+  prisma:       { id:"prisma", escola:"arcana", nome:"Prisma", icone:"💠", cd:12, desc:"raios em todas as direções", nivel:1 },
+  investida:    { id:"investida", escola:"marcial", nome:"Investida", icone:"🐎", cd:7, desc:"avança atropelando", nivel:0 },
+  terremoto:    { id:"terremoto", escola:"marcial", nome:"Terremoto", icone:"🌋", cd:16, desc:"o chão racha em volta", nivel:1 },
+  raiz:         { id:"raiz", escola:"vital", nome:"Raiz", icone:"🌱", cd:13, desc:"cura e prende quem chega perto", nivel:0 },
+  florescer:    { id:"florescer", escola:"vital", nome:"Florescer", icone:"🌸", cd:18, desc:"aura que cura enquanto dura", nivel:1 },
+  torre:        { id:"torre", escola:"tatica", nome:"Torre", icone:"🗼", cd:12, desc:"posiciona uma torre que atira", nivel:0 },
+  enxame:       { id:"enxame", escola:"tatica", nome:"Enxame", icone:"🐝", cd:17, desc:"drones perseguem inimigos", nivel:1 },
+};
+
+/* ----------------------------------------------------------
+   SAVE — progresso persistente
+---------------------------------------------------------- */
+const SAVE_KEY = "combate.progresso.v1";
+
+function saveVazio() {
+  return {
+    fragmentos: 0,
+    maestria: { espada: 0, varinha: 0, martelo: 0 },
+    ramo:    { espada: null, varinha: null, martelo: null },   // escolha de tier 2
+    final:   { espada: null, varinha: null, martelo: null },   // escolha de tier 3
+    escolasAbertas: ["harmonica"],
+    supersAbertos: ["acorde"],
+    superEquipado: "acorde",
+    melhorTempo: 0, melhorNivel: 0, totalKills: 0, runs: 0,
+    visto: {},   // ids já vistos (pra destacar novidade)
+  };
+}
+
+function carregarSave(storage) {
+  try {
+    const raw = storage.getItem(SAVE_KEY);
+    if (!raw) return saveVazio();
+    const s = JSON.parse(raw);
+    return Object.assign(saveVazio(), s);
+  } catch (e) { return saveVazio(); }
+}
+
+function gravarSave(storage, s) {
+  try { storage.setItem(SAVE_KEY, JSON.stringify(s)); return true; }
+  catch (e) { return false; }
+}
+
+/* ----------------------------------------------------------
+   ESTADO DE MAESTRIA de uma arma
+---------------------------------------------------------- */
+function estadoArma(save, arma) {
+  const m = save.maestria[arma] || 0;
+  const ramo = save.ramo[arma];
+  const fin = save.final[arma];
+  let tier = 1, prox = MAESTRIA.t2, falta = MAESTRIA.t2 - m, pendente = null;
+
+  if (m >= MAESTRIA.t2 && !ramo) pendente = "ramo";
+  if (ramo) tier = 2;
+  if (tier === 2) {
+    prox = MAESTRIA.t3; falta = MAESTRIA.t3 - m;
+    if (m >= MAESTRIA.t3 && !fin) pendente = "final";
+    if (fin) { tier = 3; falta = 0; prox = null; }
+  }
+  return {
+    tier, maestria: m, prox, falta: Math.max(0, falta), pendente,
+    pct: prox ? Math.min(1, m / prox) : 1,
+    ramo, final: fin,
+  };
+}
+
+/* nome/visual atual da arma conforme evolução */
+function armaAtual(save, arma) {
+  const arv = ARVORES[arma];
+  const est = estadoArma(save, arma);
+  if (est.final) {
+    const f = arv.ramos[est.ramo].finais[est.final];
+    return { ...arv.base, nome: f.nome, icone: f.icone, desc: f.desc, regra: f.regra, ramo: est.ramo, final: est.final, tier: 3 };
+  }
+  if (est.ramo) {
+    const r = arv.ramos[est.ramo];
+    return { ...arv.base, nome: r.nome, icone: r.icone, cor: r.cor, desc: r.desc, regra: r.regra, ramo: est.ramo, tier: 2 };
+  }
+  return { ...arv.base, regra: null, tier: 1 };
+}
+
+/* opções de evolução disponíveis agora */
+function opcoesEvolucao(save, arma) {
+  const est = estadoArma(save, arma);
+  if (est.pendente === "ramo") return { tipo: "ramo", opcoes: Object.values(ARVORES[arma].ramos) };
+  if (est.pendente === "final") return { tipo: "final", opcoes: Object.values(ARVORES[arma].ramos[est.ramo].finais) };
+  return null;
+}
+
+function escolherEvolucao(save, arma, id) {
+  const op = opcoesEvolucao(save, arma);
+  if (!op) return false;
+  const valido = op.opcoes.some(o => o.id === id);
+  if (!valido) return false;
+  if (op.tipo === "ramo") save.ramo[arma] = id; else save.final[arma] = id;
+  return true;
+}
+
+function ganharMaestria(save, arma, dano) {
+  const p = dano / MAESTRIA.divisorDano;
+  save.maestria[arma] = (save.maestria[arma] || 0) + p;
+  return p;
+}
+
+/* ----------------------------------------------------------
+   RESSONÂNCIA — lê a sequência real do LIFE.
+   REGRA DE OURO: só adiciona. Nunca tira nada do jogador.
+---------------------------------------------------------- */
+function diasDesde(iso, agora) {
+  if (!iso) return null;
+  const d = Math.floor(((agora || Date.now()) - new Date(iso).getTime()) / 86400000);
+  return isNaN(d) ? null : d;
+}
+
+/* recebe as linhas da planilha do LIFE e devolve o buff por escola */
+function calcularRessonancia(rows, agora) {
+  const porCat = {};
+  (rows || []).forEach(r => {
+    if (!r || r.tipo === "Rotina") return;
+    const c = r.categoria;
+    if (!c) return;
+    if (!porCat[c] || (r.ultimoAvanco || "") > porCat[c]) porCat[c] = r.ultimoAvanco || "";
+  });
+
+  const out = {};
+  for (const esc of Object.values(ESCOLAS)) {
+    const ultimo = porCat[esc.categoria];
+    const dias = diasDesde(ultimo, agora);
+    // "viva" se avançou hoje ou ontem
+    const viva = dias !== null && dias <= 1;
+    // sequência aproximada: quanto mais recente, mais forte (o LIFE guarda só o último avanço)
+    const forca = viva ? 1 : 0;
+    const bonus = viva ? Math.min(esc.ressonancia.teto, esc.ressonancia.porDia * 7 * forca) : 0;
+    out[esc.id] = {
+      escola: esc.id, nome: esc.nome, icone: esc.icone, cor: esc.cor,
+      categoria: esc.categoria, dias, ativa: viva, bonus,
+      atributo: esc.ressonancia.atributo, desc: esc.ressonancia.desc,
+    };
+  }
+  return out;
+}
+
+/* escolas desbloqueadas pela rotina (só adiciona) */
+function escolasDesbloqueadas(save, ressonancia) {
+  const novas = [];
+  for (const r of Object.values(ressonancia || {})) {
+    if (r.ativa && !save.escolasAbertas.includes(r.escola)) {
+      save.escolasAbertas.push(r.escola);
+      novas.push(r.escola);
+    }
+  }
+  return novas;
+}
+
+/* ----------------------------------------------------------
+   SORTEIO DE UPGRADES no level-up
+---------------------------------------------------------- */
+function sortearUpgrades(nivel, jaPegos, escolasAbertas, aleatorio) {
+  const rnd = aleatorio || Math.random;
+  const pool = MODIFICADORES.filter(m => {
+    if (jaPegos.includes(m.id)) return false;
+    if (m.raro === 1 && nivel < 6) return false;
+    if (m.escola && !(escolasAbertas || []).includes(m.escola)) return false;
+    return true;
+  });
+  const escolhidos = [];
+  const copia = [...pool];
+  while (escolhidos.length < 3 && copia.length) {
+    const i = Math.floor(rnd() * copia.length);
+    escolhidos.push(copia.splice(i, 1)[0]);
+  }
+  return escolhidos;
+}
+
+/* supers liberados conforme escolas abertas + marcos */
+function supersDisponiveis(save) {
+  return Object.values(SUPERS).filter(s =>
+    save.escolasAbertas.includes(s.escola) && save.supersAbertos.includes(s.id)
+  );
+}
+
+/* marcos que liberam supers novos da escola harmônica */
+function checarMarcos(save) {
+  const novos = [];
+  const totalMaestria = Object.values(save.maestria).reduce((a, b) => a + b, 0);
+  const marcos = [
+    { super: "crescendo", req: () => save.runs >= 5 },
+    { super: "silencio",  req: () => totalMaestria >= 8000 },
+    { super: "sinfonia",  req: () => Object.values(save.ramo).filter(Boolean).length >= 2 },
+  ];
+  for (const m of marcos) {
+    if (!save.supersAbertos.includes(m.super) && m.req()) {
+      save.supersAbertos.push(m.super);
+      novos.push(m.super);
+    }
+  }
+  return novos;
+}
+
+/* exporta para o jogo e para os testes */
+
+  return { ESCOLAS, ARVORES, MAESTRIA, MODIFICADORES, SUPERS, SAVE_KEY, saveVazio, carregarSave,
+    gravarSave, estadoArma, armaAtual, opcoesEvolucao, escolherEvolucao, ganharMaestria,
+    calcularRessonancia, escolasDesbloqueadas, sortearUpgrades, supersDisponiveis, checarMarcos, diasDesde };
+})();
+/* ==========================================================
+   INTEGRAÇÃO — liga o combate ao sistema de progressão.
+   Depende de: prog.js (dados) e combat.js (motor)
+   ========================================================== */
+
+const LIFE_API = "https://script.google.com/macros/s/AKfycbzsG1dCXRXn-JSNAjFTA-oDwyI_RK5CPhx0TLXhzjHusrVAgEXD2X8nVRqBNqNAUk49/exec";
+
+/* estado persistente + da run */
+const META = {
+  save: null,
+  ressonancia: {},
+  modAtivos: [],        // ids dos modificadores pegos nesta run
+  mod: {},              // acesso rápido: mod.ricochete === true
+  pausa: null,          // {tipo:"upgrade"|"evolucao", opcoes:[], arma}
+  cartas: [],
+  danoPorArma: { espada: 0, varinha: 0, martelo: 0 },
+  contadorAtaque: 0,
+  matouRecente: 0,
+  escudo: 0, escudoMax: 0, escudoT: 0,
+  novidades: [],
+};
+
+function initMeta() {
+  META.save = P.carregarSave(localStorage);
+  aplicarRessonancia();
+}
+
+/* ---------- ressonância: lê a rotina real ---------- */
+/* estado da conexão com o LIFE — nunca falhar em silêncio */
+function origemInvalida() {
+  const p = location.protocol;
+  return p === "content:" || p === "file:";
+}
+
+async function aplicarRessonancia() {
+  let rows = null;
+  META.conexao = "carregando";
+  META.conexaoDetalhe = "";
+
+  if (!LIFE_API || LIFE_API.indexOf("script.google") < 0) {
+    META.conexao = "sem-api";
+  } else if (origemInvalida()) {
+    META.conexao = "origem";
+    META.conexaoDetalhe = "abra pelo GitHub Pages, não pelo arquivo baixado";
+  } else {
+    try {
+      const r = await fetch(LIFE_API, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "getAll" }),
+      });
+      const j = await r.json();
+      if (j.ok && j.rows) {
+        rows = j.rows;
+        META.conexao = "ok";
+        META.conexaoDetalhe = `${rows.length} linhas lidas`;
+      } else {
+        META.conexao = "erro";
+        META.conexaoDetalhe = j.error || "a planilha respondeu sem dados";
+      }
+    } catch (e) {
+      META.conexao = "erro";
+      META.conexaoDetalhe = (e && e.message) ? e.message : "sem conexão";
+    }
+  }
+
+  META.ressonancia = P.calcularRessonancia(rows || []);
+  const novas = P.escolasDesbloqueadas(META.save, META.ressonancia);
+  if (novas.length) {
+    novas.forEach(n => META.novidades.push({ tipo: "escola", id: n }));
+    P.gravarSave(localStorage, META.save);
+  }
+  atualizarBanner();
+}
+
+function bonusEscola(id) {
+  const r = META.ressonancia[id];
+  return r && r.ativa ? r.bonus : 0;
+}
+
+function atualizarBanner() {
+  const el = document.getElementById("resson");
+  if (!el) return;
+  const ativas = Object.values(META.ressonancia).filter(r => r.ativa);
+  if (!ativas.length) { el.style.display = "none"; return; }
+  el.style.display = "flex";
+  el.innerHTML = ativas.map(r =>
+    `<span style="color:${r.cor}">${r.icone} ${r.nome} +${Math.round(r.bonus*100)}%</span>`
+  ).join("");
+}
+
+/* ---------- multiplicadores vindos da progressão ---------- */
+function multDano(armaId) {
+  let m = 1;
+  // ressonância marcial reforça corpo a corpo; arcana reforça projétil
+  if (armaId === "espada" || armaId === "martelo") m += bonusEscola("marcial");
+  if (armaId === "varinha") m += bonusEscola("arcana");
+  // modificadores
+  if (META.mod.frenesi) m += Math.min(0.5, META.matouRecente * 0.03);
+  if (META.mod.adrenalina && p.hp / p.hpMax < 0.4) m += 0.35;
+  // sobrecarga: todo 5º ataque triplica
+  return m;
+}
+
+function multVelocidade() {
+  let v = 1;
+  if (META.mod.passoLeve) v += 0.18;
+  if (META.mod.adrenalina) v += (1 - p.hp / p.hpMax) * 0.35;
+  return v;
+}
+
+function multCadencia() {
+  let c = 1;
+  if (META.mod.frenesi) c += Math.min(0.45, META.matouRecente * 0.025);
+  return c;
+}
+
+/* ---------- registrar dano p/ maestria ---------- */
+function registrarDano(armaId, dano) {
+  if (META.danoPorArma[armaId] === undefined) return;
+  META.danoPorArma[armaId] += dano;
+}
+
+/* ---------- level-up: pausa e oferece 3 cartas ---------- */
+function aoSubirNivel() {
+  const ops = P.sortearUpgrades(p.nivel, META.modAtivos, META.save.escolasAbertas);
+  if (!ops.length) return;
+  META.pausa = { tipo: "upgrade" };
+  META.cartas = ops;
+}
+
+function escolherCarta(i) {
+  const c = META.cartas[i];
+  if (!c) return;
+  META.modAtivos.push(c.id);
+  META.mod[c.id] = true;
+  aplicarEfeitoImediato(c.id);
+  META.pausa = null; META.cartas = [];
+  som("nivel");
+}
+
+function aplicarEfeitoImediato(id) {
+  if (id === "escudo") { META.escudoMax = 30; META.escudo = 30; }
+  if (id === "ima") p.raioColeta = 260;
+  if (id === "foco") SUPER.cdMax = Math.max(3, SUPER.cdMax * 0.7);
+}
+
+/* ---------- fim de run: maestria, fragmentos, evolução ---------- */
+function fimDeRun() {
+  const s = META.save;
+  s.runs++;
+  s.totalKills += G.kills;
+  s.melhorTempo = Math.max(s.melhorTempo, Math.floor(G.run));
+  s.melhorNivel = Math.max(s.melhorNivel, p.nivel);
+
+  for (const arma of ["espada", "varinha", "martelo"]) {
+    if (META.danoPorArma[arma] > 0) P.ganharMaestria(s, arma, META.danoPorArma[arma]);
+  }
+  let frag = Math.floor(G.kills * 0.5 + G.run * 0.3);
+  if (META.mod.avareza) frag = Math.floor(frag * 1.6);
+  s.fragmentos += frag;
+  META.ultimoFrag = frag;
+
+  const novosSupers = P.checarMarcos(s);
+  novosSupers.forEach(n => META.novidades.push({ tipo: "super", id: n }));
+
+  P.gravarSave(localStorage, s);
+
+  // há evolução pendente?
+  META.evolucaoPendente = null;
+  for (const arma of ["espada", "varinha", "martelo"]) {
+    const op = P.opcoesEvolucao(s, arma);
+    if (op) { META.evolucaoPendente = { arma, ...op }; break; }
+  }
+}
+
+function confirmarEvolucao(id) {
+  const ev = META.evolucaoPendente;
+  if (!ev) return;
+  P.escolherEvolucao(META.save, ev.arma, id);
+  P.gravarSave(localStorage, META.save);
+  META.novidades.push({ tipo: "evolucao", arma: ev.arma, id });
+  // procura próxima pendente
+  META.evolucaoPendente = null;
+  for (const arma of ["espada", "varinha", "martelo"]) {
+    const op = P.opcoesEvolucao(META.save, arma);
+    if (op) { META.evolucaoPendente = { arma, ...op }; break; }
+  }
+  som("nivel");
+}
+
+/* ---------- reset por run ---------- */
+function resetMeta() {
+  META.modAtivos = []; META.mod = {};
+  META.danoPorArma = { espada: 0, varinha: 0, martelo: 0 };
+  META.contadorAtaque = 0; META.matouRecente = 0;
+  META.escudo = 0; META.escudoMax = 0;
+  META.pausa = null; META.cartas = [];
+  p.raioColeta = 130;
+  SUPER.cdMax = SUPER.cdBase;
+}
+
+/* ==========================================================
+   SUPERPODERES — implementação real dos 12, por escola.
+   Cada um precisa ter uma SENSAÇÃO diferente, não só dano.
+   ========================================================== */
+
+/* estados contínuos que alguns supers criam */
+const ATIVOS = {
+  torres: [],      // {x,y,t,cd}
+  drones: [],      // {x,y,ang,t,alvo}
+  auras: [],       // {x,y,r,t,tipo}
+  pulsos: [],      // {x,y,t,restam,intervalo}
+  congelamento: 0, // segundos restantes
+  dash: 0,
+};
+
+function limparAtivos() {
+  ATIVOS.torres = []; ATIVOS.drones = []; ATIVOS.auras = [];
+  ATIVOS.pulsos = []; ATIVOS.congelamento = 0; ATIVOS.dash = 0;
+}
+
+/* helper: onda que empurra e causa dano */
+function ondaDeChoque(x, y, raio, dano, empurrao, cor) {
+  efeitos.push({ tipo:"onda", x, y, r:12, rMax:raio, vida:.45, max:.45, cor, grosso:true });
+  let n = 0;
+  for (const e of inimigos) {
+    if (e.morto) continue;
+    const d = Math.hypot(e.x - x, e.y - y);
+    if (d > raio) continue;
+    const ang = Math.atan2(e.y - y, e.x - x);
+    bater(e, dano, ang, empurrao);
+    n++;
+  }
+  return n;
+}
+
+const IMPL = {
+  /* ——————————— HARMÔNICA (som, ritmo) ——————————— */
+  acorde: {
+    usar(p) {
+      G.shake = 15; G.hitstop = .12;
+      efeitos.push({ tipo:"flash", vida:.10, max:.10 });
+      ondaDeChoque(p.x, p.y, 300, 90, 900, "#c9a7ff");
+      for (let i = 0; i < 30; i++) {
+        const a = rnd(0, TAU), v = rnd(180, 520);
+        particulas.push({ x:p.x, y:p.y, vx:Math.cos(a)*v, vy:Math.sin(a)*v, r:rnd(2,5), vida:rnd(.3,.7), max:.7, cor:"#c9a7ff" });
+      }
+      som("super");
+    }
+  },
+  crescendo: {
+    // três ondas em sequência, cada uma maior e mais forte
+    usar(p) {
+      ATIVOS.pulsos.push({ x:p.x, y:p.y, t:0, restam:3, intervalo:.34, indice:0, tipo:"crescendo" });
+      G.shake = 8;
+      som("super");
+    }
+  },
+  silencio: {
+    // congela tudo — o poder mais "tático"
+    usar(p) {
+      ATIVOS.congelamento = 2.5;
+      efeitos.push({ tipo:"onda", x:p.x, y:p.y, r:10, rMax:520, vida:.6, max:.6, cor:"#dfe9ff", grosso:true });
+      efeitos.push({ tipo:"flash", vida:.18, max:.18 });
+      G.shake = 6; G.hitstop = .18;
+      for (const e of inimigos) { if (!e.morto) { e.congelado = 2.5; e.vx *= .1; e.vy *= .1; } }
+      som("magia");
+    }
+  },
+  sinfonia: {
+    // pulsa sozinho por 8s — você continua jogando enquanto ele trabalha
+    usar(p) {
+      ATIVOS.auras.push({ x:p.x, y:p.y, r:230, t:8, tipo:"sinfonia", cd:0, segue:true });
+      efeitos.push({ tipo:"anel", x:p.x, y:p.y, r:20, rMax:230, vida:.5, max:.5, cor:"#c9a7ff", grosso:true });
+      som("nivel");
+    }
+  },
+
+  /* ——————————— ARCANA (magia, alcance) ——————————— */
+  singularidade: {
+    // buraco que suga e depois esmaga
+    usar(p) {
+      const alvo = inimigoMaisProximo(p) || { x: p.x + Math.cos(p.mira)*180, y: p.y + Math.sin(p.mira)*180 };
+      ATIVOS.auras.push({ x:alvo.x, y:alvo.y, r:200, t:2.2, tipo:"singularidade", cd:0 });
+      efeitos.push({ tipo:"anel", x:alvo.x, y:alvo.y, r:200, rMax:20, vida:2.2, max:2.2, cor:"#8be9ff", grosso:true });
+      som("magia");
+    }
+  },
+  prisma: {
+    // raios em todas as direções
+    usar(p) {
+      G.shake = 9;
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * TAU;
+        projeteis.push({ x:p.x, y:p.y, vx:Math.cos(a)*640, vy:Math.sin(a)*640, r:8,
+          dano:42, vida:1.3, perfura:99, atingidos:[], cor:"#8be9ff", knock:160,
+          arma:{ shake:1, hitstop:.02 } });
+      }
+      efeitos.push({ tipo:"onda", x:p.x, y:p.y, r:8, rMax:110, vida:.3, max:.3, cor:"#8be9ff" });
+      som("super");
+    }
+  },
+
+  /* ——————————— MARCIAL (corpo, impacto) ——————————— */
+  investida: {
+    // avança atropelando — o único que MOVE você
+    usar(p) {
+      ATIVOS.dash = .32;
+      p.dashAng = p.mira;
+      p.dashAtingidos = [];
+      G.shake = 7;
+      som("pesado");
+    }
+  },
+  terremoto: {
+    // o chão racha em ondas concêntricas
+    usar(p) {
+      ATIVOS.pulsos.push({ x:p.x, y:p.y, t:0, restam:5, intervalo:.18, indice:0, tipo:"terremoto" });
+      G.shake = 14; G.hitstop = .1;
+      som("pesado");
+    }
+  },
+
+  /* ——————————— VITAL (cura, defesa) ——————————— */
+  raiz: {
+    // cura e prende quem está perto
+    usar(p) {
+      p.hp = Math.min(p.hpMax, p.hp + 35);
+      efeitos.push({ tipo:"onda", x:p.x, y:p.y, r:10, rMax:200, vida:.5, max:.5, cor:"#7fd858", grosso:true });
+      for (const e of inimigos) {
+        if (e.morto) continue;
+        if (Math.hypot(e.x-p.x, e.y-p.y) < 200) { e.congelado = 2.0; e.vx = 0; e.vy = 0; }
+      }
+      for (let i = 0; i < 20; i++) {
+        const a = rnd(0, TAU), v = rnd(40, 160);
+        particulas.push({ x:p.x, y:p.y, vx:Math.cos(a)*v, vy:Math.sin(a)*v - 60, r:rnd(2,4), vida:rnd(.4,.9), max:.9, cor:"#9cff8a" });
+      }
+      som("nivel");
+    }
+  },
+  florescer: {
+    // aura que cura enquanto dura
+    usar(p) {
+      ATIVOS.auras.push({ x:p.x, y:p.y, r:170, t:7, tipo:"florescer", cd:0, segue:true });
+      som("nivel");
+    }
+  },
+
+  /* ——————————— TÁTICA (automação) ——————————— */
+  torre: {
+    // posiciona uma torre que atira sozinha
+    usar(p) {
+      ATIVOS.torres.push({ x:p.x, y:p.y, t:14, cd:0 });
+      efeitos.push({ tipo:"anel", x:p.x, y:p.y, r:10, rMax:60, vida:.3, max:.3, cor:"#ffcf6b" });
+      som("magia");
+    }
+  },
+  enxame: {
+    // drones que perseguem inimigos
+    usar(p) {
+      for (let i = 0; i < 5; i++) {
+        ATIVOS.drones.push({ x:p.x + rnd(-20,20), y:p.y + rnd(-20,20), vx:0, vy:0, t:11, cd:0 });
+      }
+      som("magia");
+    }
+  },
+};
+
+function inimigoMaisProximo(de) {
+  let melhor = null, md = Infinity;
+  for (const e of inimigos) {
+    if (e.morto) continue;
+    const d = dist2(e, de);
+    if (d < md) { md = d; melhor = e; }
+  }
+  return melhor;
+}
+
+/* ---------- atualização dos efeitos contínuos ---------- */
+function atualizarAtivos(dt) {
+  /* congelamento global */
+  if (ATIVOS.congelamento > 0) ATIVOS.congelamento -= dt;
+
+  /* dash da investida */
+  if (ATIVOS.dash > 0) {
+    ATIVOS.dash -= dt;
+    const vel = 900;
+    p.x += Math.cos(p.dashAng) * vel * dt;
+    p.y += Math.sin(p.dashAng) * vel * dt;
+    p.inv = Math.max(p.inv, .1);
+    particulas.push({ x:p.x, y:p.y, vx:rnd(-40,40), vy:rnd(-40,40), r:rnd(2,5), vida:.3, max:.3, cor:"#ff9c6b" });
+    for (const e of inimigos) {
+      if (e.morto || (p.dashAtingidos && p.dashAtingidos.includes(e))) continue;
+      if (dist2(e, p) < Math.pow(e.r + p.r + 14, 2)) {
+        bater(e, 70, p.dashAng, 700);
+        e.atordoado = .6;
+        (p.dashAtingidos = p.dashAtingidos || []).push(e);
+        G.shake = Math.max(G.shake, 8);
+      }
+    }
+  }
+
+  /* pulsos sequenciais (crescendo / terremoto) */
+  for (const pu of ATIVOS.pulsos) {
+    pu.t -= dt;
+    if (pu.t <= 0 && pu.restam > 0) {
+      pu.indice++;
+      if (pu.tipo === "crescendo") {
+        const esc = pu.indice;
+        ondaDeChoque(p.x, p.y, 150 + esc * 110, 40 + esc * 35, 400 + esc * 250, "#c9a7ff");
+        G.shake = Math.max(G.shake, 5 + esc * 4);
+      } else if (pu.tipo === "terremoto") {
+        const r = 90 + pu.indice * 75;
+        efeitos.push({ tipo:"onda", x:pu.x, y:pu.y, r:r-40, rMax:r, vida:.35, max:.35, cor:"#ff9c6b", grosso:true });
+        for (const e of inimigos) {
+          if (e.morto) continue;
+          const d = Math.hypot(e.x-pu.x, e.y-pu.y);
+          if (d > r - 60 && d < r + 20) {
+            bater(e, 46, Math.atan2(e.y-pu.y, e.x-pu.x), 380);
+            e.atordoado = .4;
+          }
+        }
+        G.shake = Math.max(G.shake, 7);
+      }
+      pu.restam--;
+      pu.t = pu.intervalo;
+    }
+  }
+  ATIVOS.pulsos = ATIVOS.pulsos.filter(x => x.restam > 0);
+
+  /* auras */
+  for (const a of ATIVOS.auras) {
+    a.t -= dt; a.cd -= dt;
+    if (a.segue) { a.x = p.x; a.y = p.y; }
+    if (a.tipo === "sinfonia" && a.cd <= 0) {
+      ondaDeChoque(a.x, a.y, a.r, 34, 260, "#c9a7ff");
+      a.cd = .9;
+    }
+    if (a.tipo === "florescer" && a.cd <= 0) {
+      p.hp = Math.min(p.hpMax, p.hp + 6);
+      efeitos.push({ tipo:"anel", x:a.x, y:a.y, r:a.r*.5, rMax:a.r, vida:.4, max:.4, cor:"#7fd858" });
+      particulas.push({ x:p.x+rnd(-20,20), y:p.y+rnd(-20,20), vx:0, vy:-50, r:3, vida:.6, max:.6, cor:"#9cff8a" });
+      a.cd = 1;
+    }
+    if (a.tipo === "singularidade") {
+      for (const e of inimigos) {
+        if (e.morto) continue;
+        const d = Math.hypot(e.x-a.x, e.y-a.y);
+        if (d < a.r && d > 4) {
+          const ang = Math.atan2(a.y-e.y, a.x-e.x);
+          const forca = (1 - d/a.r) * 900;
+          e.vx += Math.cos(ang) * forca * dt;
+          e.vy += Math.sin(ang) * forca * dt;
+        }
+      }
+      if (a.t <= dt) {   // colapso final
+        ondaDeChoque(a.x, a.y, 170, 130, 700, "#8be9ff");
+        G.shake = 16; G.hitstop = .12;
+        efeitos.push({ tipo:"flash", vida:.12, max:.12 });
+      }
+    }
+  }
+  ATIVOS.auras = ATIVOS.auras.filter(a => a.t > 0);
+
+  /* torres */
+  for (const t of ATIVOS.torres) {
+    t.t -= dt; t.cd -= dt;
+    if (t.cd <= 0) {
+      const alvo = inimigoMaisProximo(t);
+      if (alvo && dist2(alvo, t) < 340*340) {
+        const ang = Math.atan2(alvo.y-t.y, alvo.x-t.x);
+        projeteis.push({ x:t.x, y:t.y, vx:Math.cos(ang)*560, vy:Math.sin(ang)*560, r:6,
+          dano:26, vida:1, perfura:1, atingidos:[], cor:"#ffcf6b", knock:140,
+          arma:{ shake:.8, hitstop:.015 } });
+        t.cd = .45;
+      }
+    }
+  }
+  ATIVOS.torres = ATIVOS.torres.filter(t => t.t > 0);
+
+  /* drones */
+  for (const d of ATIVOS.drones) {
+    d.t -= dt; d.cd -= dt;
+    const alvo = inimigoMaisProximo(d);
+    if (alvo) {
+      const ang = Math.atan2(alvo.y-d.y, alvo.x-d.x);
+      d.vx = lerp(d.vx, Math.cos(ang)*300, dt*4);
+      d.vy = lerp(d.vy, Math.sin(ang)*300, dt*4);
+      if (dist2(d, alvo) < Math.pow(alvo.r + 12, 2) && d.cd <= 0) {
+        bater(alvo, 20, ang, 120);
+        d.cd = .5;
+      }
+    } else {
+      d.vx = lerp(d.vx, (p.x-d.x)*2, dt*3);
+      d.vy = lerp(d.vy, (p.y-d.y)*2, dt*3);
+    }
+    d.x += d.vx*dt; d.y += d.vy*dt;
+  }
+  ATIVOS.drones = ATIVOS.drones.filter(d => d.t > 0);
+}
+
+/* ---------- desenho dos ativos ---------- */
+function desenharAtivos() {
+  for (const a of ATIVOS.auras) {
+    const alpha = Math.min(1, a.t) * .25;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = a.tipo === "florescer" ? "#7fd858" : a.tipo === "singularidade" ? "#8be9ff" : "#c9a7ff";
+    ctx.beginPath(); ctx.arc(a.x, a.y, a.r, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 1;
+    if (a.tipo === "singularidade") {
+      const raio = 26 * (a.t / 2.2) + 8;
+      ctx.fillStyle = "#0a0d14";
+      ctx.beginPath(); ctx.arc(a.x, a.y, raio, 0, TAU); ctx.fill();
+      ctx.strokeStyle = "#8be9ff"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(a.x, a.y, raio, 0, TAU); ctx.stroke();
+    }
+  }
+  for (const t of ATIVOS.torres) {
+    ctx.fillStyle = "#ffcf6b";
+    ctx.beginPath(); ctx.arc(t.x, t.y, 11, 0, TAU); ctx.fill();
+    ctx.fillStyle = "#0d1210";
+    ctx.beginPath(); ctx.arc(t.x, t.y, 5, 0, TAU); ctx.fill();
+    ctx.globalAlpha = .25; ctx.strokeStyle = "#ffcf6b"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(t.x, t.y, 340, 0, TAU); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  for (const d of ATIVOS.drones) {
+    ctx.fillStyle = "#ffe08a";
+    ctx.beginPath(); ctx.arc(d.x, d.y, 6, 0, TAU); ctx.fill();
+    ctx.globalAlpha = .3;
+    ctx.beginPath(); ctx.arc(d.x, d.y, 11, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+  if (ATIVOS.congelamento > 0) {
+    ctx.globalAlpha = Math.min(.16, ATIVOS.congelamento * .08);
+    ctx.fillStyle = "#dfe9ff";
+    ctx.fillRect(cam.x - W, cam.y - H, W*2, H*2);
+    ctx.globalAlpha = 1;
+  }
+}
+
+/* super equipado atualmente */
+function superAtual() {
+  const id = (typeof META !== "undefined" && META.save) ? META.save.superEquipado : "acorde";
+  const dados = P.SUPERS[id] || P.SUPERS.acorde;
+  return { ...dados, impl: IMPL[id] || IMPL.acorde };
+}
+
+/* ==========================================================
+   REGRAS DE EVOLUÇÃO — o que cada uma das 27 formas
+   realmente FAZ no combate.
+   ========================================================== */
+
+/* estruturas de apoio criadas pelas regras */
+const EXTRAS = {
+  fendas: [],     // {x,y,r,t,dano}  — dano contínuo no chão
+  orbes: [],      // {ang,dist,cd}   — orbitam o jogador
+  feixes: [],     // {x,y,ang,alc,t} — visual do raio contínuo
+  ondas: [],      // {x,y,vx,vy,t,dano,volta,atingidos,largura}
+  bigornas: [],   // {x,y,vx,vy,t,volta,atingidos}
+  raios: [],      // {x,y,t}
+  acumulo: { alvo: null, pilha: 0 },
+  reducaoDano: 0,
+  contadorRaio: 0,
+  blindagem: 0,
+};
+
+function limparExtras() {
+  EXTRAS.fendas = []; EXTRAS.orbes = []; EXTRAS.feixes = [];
+  EXTRAS.ondas = []; EXTRAS.bigornas = []; EXTRAS.raios = [];
+  EXTRAS.acumulo = { alvo: null, pilha: 0 };
+  EXTRAS.contadorRaio = 0; EXTRAS.blindagem = 0; EXTRAS.reducaoDano = 0;
+}
+
+/* qual regra está ativa nesta arma */
+function regraDe(armaId) {
+  if (typeof META === "undefined" || !META.save) return null;
+  const a = P.armaAtual(META.save, armaId);
+  return a.regra || null;
+}
+
+/* ---------- helpers ---------- */
+function alvosNoArco(p, ang, alcance, arco, extra) {
+  const lista = [];
+  for (const e of inimigos) {
+    if (e.morto) continue;
+    const d = Math.hypot(e.x - p.x, e.y - p.y);
+    if (d > alcance + e.r) continue;
+    if (arco >= TAU - .01) { lista.push(e); continue; }
+    let da = Math.atan2(e.y - p.y, e.x - p.x) - ang;
+    while (da > Math.PI) da -= TAU; while (da < -Math.PI) da += TAU;
+    if (Math.abs(da) <= arco / 2) lista.push(e);
+  }
+  return lista;
+}
+
+function criarOnda(x, y, ang, dano, opts) {
+  const o = opts || {};
+  EXTRAS.ondas.push({
+    x, y, vx: Math.cos(ang) * (o.vel || 560), vy: Math.sin(ang) * (o.vel || 560),
+    t: o.t || 0.75, dano, atingidos: [], volta: !!o.volta, voltando: false,
+    origem: { x, y }, largura: o.largura || 26, cor: o.cor || "#b9d4ff",
+    deixaFenda: !!o.deixaFenda,
+  });
+}
+
+function criarFenda(x, y, dano) {
+  EXTRAS.fendas.push({ x, y, r: 34, t: 3.2, dano, cd: 0 });
+}
+
+function raioNoAlvo(alvo, dano, salta) {
+  if (!alvo || alvo.morto) return;
+  EXTRAS.raios.push({ x: alvo.x, y: alvo.y, t: .22 });
+  bater(alvo, dano, rnd(0, TAU), 220, "martelo");
+  G.shake = Math.max(G.shake, 6);
+  if (salta) {
+    let melhor = null, md = 220 * 220;
+    for (const e of inimigos) {
+      if (e.morto || e === alvo) continue;
+      const d = dist2(e, alvo);
+      if (d < md) { md = d; melhor = e; }
+    }
+    if (melhor) {
+      EXTRAS.raios.push({ x: melhor.x, y: melhor.y, t: .2 });
+      bater(melhor, dano * .7, rnd(0, TAU), 160, "martelo");
+    }
+  }
+}
+
+/* ==========================================================
+   ESPADA
+   ========================================================== */
+function atacarEspada(p, arma) {
+  const regra = regraDe("espada");
+  const cor = arma.cor;
+  let arco = arma.arco, alcance = arma.alcance, dano = arma.dano, knock = arma.knock;
+  let angulos = [p.mira];
+
+  /* —— tier 2 —— */
+  if (regra === "arcoDuplo" || regra === "puxaAoCentro" || regra === "giroContinuo" || regra === "golpeEco") {
+    angulos = [p.mira, p.mira + Math.PI];          // frente e costas
+    dano *= .85;
+  }
+  if (regra === "arco360" || regra === "danoPorAlvo" || regra === "sucao" || regra === "executar") {
+    arco = TAU; alcance *= 1.05; dano *= 1.1;      // gira inteiro
+  }
+  if (regra === "ondaCortante" || regra === "bumerangue" || regra === "leque3" || regra === "fenda") {
+    // dispara onda à distância
+    const leque = regra === "leque3" ? [-.28, 0, .28] : [0];
+    for (const off of leque) {
+      criarOnda(p.x, p.y, p.mira + off, dano * .9, {
+        cor, volta: regra === "bumerangue", deixaFenda: regra === "fenda", vel: 620,
+      });
+    }
+    som("swing");
+    return;
+  }
+
+  /* —— aplica os arcos —— */
+  let acertou = 0, alvosTotais = [];
+  for (const ang of angulos) {
+    efeitos.push({ tipo:"arco", x:p.x, y:p.y, ang, r:alcance, arco:Math.min(arco, 2.9), vida:.16, max:.16, cor });
+    const alvos = alvosNoArco(p, ang, alcance, arco);
+    alvosTotais = alvosTotais.concat(alvos);
+  }
+  // remove duplicados (arco 360 pode repetir)
+  alvosTotais = [...new Set(alvosTotais)];
+
+  /* —— tier 3: modificadores de dano —— */
+  let mult = 1;
+  if (regra === "danoPorAlvo") mult = 1 + Math.min(1.4, alvosTotais.length * 0.22);   // ceifa
+
+  for (const e of alvosTotais) {
+    const ang = Math.atan2(e.y - p.y, e.x - p.x);
+    /* execução: mata quem está fraco */
+    if (regra === "executar" && e.hp <= e.hpMax * 0.22) {
+      bater(e, e.hp, ang, knock, "espada");
+      efeitos.push({ tipo:"onda", x:e.x, y:e.y, r:6, rMax:56, vida:.25, max:.25, cor:"#ff6b6b" });
+      acertou++; continue;
+    }
+    bater(e, dano * mult, ang, knock, "espada");
+    /* tesoura: puxa pro centro em vez de empurrar */
+    if (regra === "puxaAoCentro") { e.vx -= Math.cos(ang) * knock * 1.6; e.vy -= Math.sin(ang) * knock * 1.6; }
+    /* gravitica: sucção contínua */
+    if (regra === "sucao") { e.vx -= Math.cos(ang) * knock * 1.9; e.vy -= Math.sin(ang) * knock * 1.9; }
+    /* gêmeas: segundo golpe automático */
+    if (regra === "golpeEco") { bater(e, dano * .55, ang, knock * .4, "espada"); }
+    acertou++;
+  }
+
+  if (acertou) {
+    G.shake = Math.max(G.shake, arma.shake + acertou);
+    G.hitstop = Math.max(G.hitstop, arma.hitstop);
+  }
+  som(acertou ? "hit" : "swing");
+}
+
+/* turbilhão: ataca sozinho enquanto anda */
+function turbilhaoTick(dt) {
+  if (regraDe("espada") !== "giroContinuo") return;
+  if (p.arma !== "espada") return;
+  p.giroT = (p.giroT || 0) + dt;
+  if (p.giroT < .28) return;
+  p.giroT = 0;
+  const arma = ARMAS.espada;
+  const alvos = alvosNoArco(p, 0, arma.alcance * .95, TAU);
+  efeitos.push({ tipo:"anel", x:p.x, y:p.y, r:arma.alcance*.5, rMax:arma.alcance*.95, vida:.2, max:.2, cor:arma.cor });
+  for (const e of alvos) {
+    const ang = Math.atan2(e.y - p.y, e.x - p.x);
+    bater(e, arma.dano * .5, ang, arma.knock * .6, "espada");
+  }
+  if (alvos.length) G.shake = Math.max(G.shake, 2);
+}
+
+/* ==========================================================
+   VARINHA
+   ========================================================== */
+function atacarVarinha(p, arma) {
+  const regra = regraDe("varinha");
+  const cor = arma.cor;
+
+  /* —— feixe contínuo (raio) —— */
+  if (regra === "feixe" || regra === "ricochete" || regra === "reflete" || regra === "acumula") {
+    const alc = 520;
+    EXTRAS.feixes.push({ x:p.x, y:p.y, ang:p.mira, alc, t:.14, cor });
+    let atingidos = [];
+    for (const e of inimigos) {
+      if (e.morto) continue;
+      const dx = e.x - p.x, dy = e.y - p.y;
+      const proj = dx * Math.cos(p.mira) + dy * Math.sin(p.mira);
+      if (proj < 0 || proj > alc) continue;
+      const perp = Math.abs(-dx * Math.sin(p.mira) + dy * Math.cos(p.mira));
+      if (perp > e.r + 12) continue;
+      atingidos.push(e);
+    }
+    let dano = arma.dano * 1.5;
+    /* desintegrar: acumula no mesmo alvo */
+    if (regra === "acumula") {
+      const primeiro = atingidos[0];
+      if (primeiro && EXTRAS.acumulo.alvo === primeiro) EXTRAS.acumulo.pilha = Math.min(12, EXTRAS.acumulo.pilha + 1);
+      else { EXTRAS.acumulo.alvo = primeiro; EXTRAS.acumulo.pilha = 0; }
+      dano *= 1 + EXTRAS.acumulo.pilha * 0.22;
+    }
+    for (const e of atingidos) bater(e, dano, p.mira, arma.knock, "varinha");
+    /* corrente: salta para vizinhos */
+    if (regra === "ricochete" && atingidos.length) {
+      const base = atingidos[atingidos.length - 1];
+      let saltos = 0, atual = base;
+      const usados = new Set(atingidos);
+      while (saltos < 3) {
+        let melhor = null, md = 190 * 190;
+        for (const e of inimigos) {
+          if (e.morto || usados.has(e)) continue;
+          const d = dist2(e, atual);
+          if (d < md) { md = d; melhor = e; }
+        }
+        if (!melhor) break;
+        EXTRAS.feixes.push({ x:atual.x, y:atual.y, ang:Math.atan2(melhor.y-atual.y, melhor.x-atual.x),
+          alc:Math.hypot(melhor.x-atual.x, melhor.y-atual.y), t:.14, cor });
+        bater(melhor, dano * .7, 0, 60, "varinha");
+        usados.add(melhor); atual = melhor; saltos++;
+      }
+    }
+    /* refração: ao atingir, o feixe se parte em direção aos 2 inimigos
+       mais próximos que estavam fora da linha original */
+    if (regra === "reflete" && atingidos.length) {
+      const base = atingidos[atingidos.length - 1];
+      const fora = inimigos
+        .filter(e => !e.morto && !atingidos.includes(e) && dist2(e, base) < 320*320)
+        .sort((a,b) => dist2(a, base) - dist2(b, base))
+        .slice(0, 2);
+      for (const alvo of fora) {
+        const a2 = Math.atan2(alvo.y - base.y, alvo.x - base.x);
+        EXTRAS.feixes.push({ x:base.x, y:base.y, ang:a2,
+          alc:Math.hypot(alvo.x-base.x, alvo.y-base.y), t:.14, cor });
+        bater(alvo, dano * .75, a2, arma.knock, "varinha");
+      }
+    }
+    if (atingidos.length) { G.shake = Math.max(G.shake, 2); G.hitstop = Math.max(G.hitstop, .02); }
+    som("magia");
+    return;
+  }
+
+  /* —— orbitais —— */
+  if (regra === "orbita" || regra === "bloqueia" || regra === "orbeAtira" || regra === "orbeExplode") {
+    if (EXTRAS.orbes.length < 4) {
+      EXTRAS.orbes.push({ ang: rnd(0, TAU), dist: 78, cd: 0, regra });
+    }
+    som("magia");
+    return;
+  }
+
+  /* —— projéteis —— */
+  let angulos = [p.mira];
+  if (regra === "tiroTriplo" || regra === "efeitosVariados" || regra === "divide")
+    angulos = [p.mira - .22, p.mira, p.mira + .22];
+  if (regra === "converge") angulos = [p.mira - .30, p.mira, p.mira + .30];
+
+  angulos.forEach((a, i) => {
+    projeteis.push({
+      x: p.x + Math.cos(a) * 22, y: p.y + Math.sin(a) * 22,
+      vx: Math.cos(a) * arma.vel, vy: Math.sin(a) * arma.vel,
+      r: 7, dano: arma.dano * (angulos.length > 1 ? .8 : 1), vida: 1.4,
+      perfura: 4, atingidos: [], cor, knock: arma.knock, arma,
+      regra, indice: i,
+      converge: regra === "converge" ? { alvoAng: p.mira, t: 0 } : null,
+    });
+  });
+  som("magia");
+  p.recuo = 0.10;
+}
+
+/* orbes orbitais */
+function orbesTick(dt) {
+  // anel de guarda: blindagem proporcional ao nº de orbes
+  if (EXTRAS.orbes.length && EXTRAS.orbes[0].regra === "bloqueia") {
+    EXTRAS.reducaoDano = Math.min(.5, EXTRAS.orbes.length * .13);
+  } else EXTRAS.reducaoDano = 0;
+  for (const o of EXTRAS.orbes) {
+    o.ang += dt * 2.4;
+    o.cd -= dt;
+    const ox = p.x + Math.cos(o.ang) * o.dist;
+    const oy = p.y + Math.sin(o.ang) * o.dist;
+    o.x = ox; o.y = oy;
+    for (const e of inimigos) {
+      if (e.morto) continue;
+      if (Math.hypot(e.x - ox, e.y - oy) < e.r + 9 && o.cd <= 0) {
+        bater(e, 16, Math.atan2(e.y - oy, e.x - ox), 180, "varinha");
+        o.cd = .35;
+        if (o.regra === "orbeExplode") {
+          efeitos.push({ tipo:"onda", x:ox, y:oy, r:6, rMax:70, vida:.25, max:.25, cor:"#a9c8ff" });
+          for (const q of inimigos) {
+            if (!q.morto && dist2(q, {x:ox,y:oy}) < 70*70) bater(q, 14, 0, 90, "varinha");
+          }
+        }
+      }
+    }
+    if (o.regra === "orbeAtira" && o.cd <= -.6) {
+      const alvo = inimigoMaisProximo({ x:ox, y:oy });
+      if (alvo && dist2(alvo, {x:ox,y:oy}) < 300*300) {
+        const a = Math.atan2(alvo.y - oy, alvo.x - ox);
+        projeteis.push({ x:ox, y:oy, vx:Math.cos(a)*520, vy:Math.sin(a)*520, r:5, dano:12,
+          vida:.9, perfura:1, atingidos:[], cor:"#a9c8ff", knock:80, arma:{shake:.6,hitstop:.01} });
+        o.cd = .1;
+      }
+    }
+    /* anel de guarda: cada orbe reduz o dano recebido */
+
+  }
+}
+
+/* ==========================================================
+   MARTELO
+   ========================================================== */
+function atacarMartelo(p, arma) {
+  const regra = regraDe("martelo");
+  const cor = arma.cor;
+  const ang = p.mira;
+
+  /* —— arremesso (bigorna) —— */
+  if (regra === "arremesso" || regra === "quedaArea" || regra === "arrasta" || regra === "blindaAoJogar") {
+    if (regra === "blindaAoJogar") EXTRAS.blindagem = 1.6;
+    if (regra === "quedaArea") {
+      // cai do céu onde há mais inimigos
+      let melhor = { x: p.x + Math.cos(ang) * 150, y: p.y + Math.sin(ang) * 150 }, maxN = -1;
+      for (const e of inimigos) {
+        if (e.morto) continue;
+        let n = 0;
+        for (const o of inimigos) if (!o.morto && dist2(o, e) < 90*90) n++;
+        if (n > maxN) { maxN = n; melhor = { x: e.x, y: e.y }; }
+      }
+      EXTRAS.bigornas.push({ x: melhor.x, y: melhor.y - 420, vx: 0, vy: 1500, t: .5,
+        alvo: melhor, queda: true, atingidos: [] });
+    } else {
+      EXTRAS.bigornas.push({ x:p.x, y:p.y, vx:Math.cos(ang)*680, vy:Math.sin(ang)*680,
+        t: .95, volta: true, voltando: false, atingidos: [], arrasta: regra === "arrasta" });
+    }
+    som("pesado");
+    return;
+  }
+
+  /* —— raio (trovão) —— */
+  if (regra === "raioCai" || regra === "raioAuto" || regra === "raioSalta" || regra === "raioMaior") {
+    const alvo = inimigoMaisProximo(p);
+    if (alvo) {
+      EXTRAS.contadorRaio++;
+      let dano = arma.dano;
+      let gigante = false;
+      if (regra === "raioMaior" && EXTRAS.contadorRaio % 10 === 0) { dano *= 3.2; gigante = true; }
+      raioNoAlvo(alvo, dano, regra === "raioSalta");
+      if (gigante) {
+        efeitos.push({ tipo:"onda", x:alvo.x, y:alvo.y, r:10, rMax:180, vida:.4, max:.4, cor:"#ffe08a", grosso:true });
+        for (const e of inimigos) {
+          if (!e.morto && dist2(e, alvo) < 180*180) bater(e, dano*.4, Math.atan2(e.y-alvo.y, e.x-alvo.x), 400, "martelo");
+        }
+        G.shake = 14; G.hitstop = .1;
+      }
+    }
+    som("pesado");
+    return;
+  }
+
+  /* —— golpe normal / sísmico —— */
+  const alvos = alvosNoArco(p, ang, arma.alcance, arma.arco);
+  efeitos.push({ tipo:"arco", x:p.x, y:p.y, ang, r:arma.alcance, arco:arma.arco, vida:.26, max:.26, cor, grosso:true });
+
+  let acertou = 0;
+  for (const e of alvos) {
+    const a = Math.atan2(e.y - p.y, e.x - p.x);
+    let dano = arma.dano;
+    /* colapso: dobro em atordoado */
+    if (regra === "puneAtordoado" && (e.atordoado > 0 || e.congelado > 0)) dano *= 2;
+    bater(e, dano, a, arma.knock, "martelo");
+    e.atordoado = 0.5;
+    acertou++;
+  }
+
+  /* ondas de choque do sísmico */
+  if (regra === "ondaChoque" || regra === "fendaChao" || regra === "tremorDuplo" || regra === "puneAtordoado") {
+    const px = p.x + Math.cos(ang) * 60, py = p.y + Math.sin(ang) * 60;
+    const tremor = (atraso) => {
+      efeitos.push({ tipo:"onda", x:px, y:py, r:10, rMax:130, vida:.32, max:.32, cor });
+      for (const e of inimigos) {
+        if (e.morto) continue;
+        if (dist2(e, {x:px,y:py}) < 130*130) {
+          bater(e, arma.dano * .45, Math.atan2(e.y-py, e.x-px), 300, "martelo");
+        }
+      }
+    };
+    tremor(0);
+    if (regra === "tremorDuplo") ATIVOS.pulsos.push({ x:px, y:py, t:.25, restam:1, intervalo:.25, indice:1, tipo:"terremoto" });
+    if (regra === "fendaChao") criarFenda(px, py, arma.dano * .22);
+    G.shake = Math.max(G.shake, arma.shake);
+  }
+
+  if (acertou) { G.shake = Math.max(G.shake, arma.shake); G.hitstop = Math.max(G.hitstop, arma.hitstop); }
+  som(acertou ? "pesado" : "swing");
+}
+
+/* tempestade: raios caem sozinhos */
+function tempestadeTick(dt) {
+  if (regraDe("martelo") !== "raioAuto") return;
+  p.tempT = (p.tempT || 0) + dt;
+  if (p.tempT < 1.4) return;
+  p.tempT = 0;
+  const vivos = inimigos.filter(e => !e.morto);
+  if (!vivos.length) return;
+  raioNoAlvo(vivos[Math.floor(Math.random() * vivos.length)], ARMAS.martelo.dano * .55, false);
+}
+
+/* ==========================================================
+   ATUALIZAÇÃO DOS EXTRAS
+   ========================================================== */
+function atualizarExtras(dt) {
+  turbilhaoTick(dt);
+  tempestadeTick(dt);
+  orbesTick(dt);
+
+  if (EXTRAS.blindagem > 0) { EXTRAS.blindagem -= dt; p.inv = Math.max(p.inv, .05); }
+
+  /* fendas no chão */
+  for (const f of EXTRAS.fendas) {
+    f.t -= dt; f.cd -= dt;
+    if (f.cd <= 0) {
+      f.cd = .35;
+      for (const e of inimigos) {
+        if (!e.morto && dist2(e, f) < f.r * f.r) bater(e, f.dano, rnd(0, TAU), 40, "espada");
+      }
+    }
+  }
+  EXTRAS.fendas = EXTRAS.fendas.filter(f => f.t > 0);
+
+  /* ondas cortantes */
+  for (const o of EXTRAS.ondas) {
+    o.t -= dt;
+    o.x += o.vx * dt; o.y += o.vy * dt;
+    if (o.volta && !o.voltando && o.t < .38) { o.voltando = true; o.vx *= -1; o.vy *= -1; o.atingidos = []; }
+    for (const e of inimigos) {
+      if (e.morto || o.atingidos.includes(e)) continue;
+      if (dist2(e, o) < Math.pow(e.r + o.largura, 2)) {
+        bater(e, o.dano, Math.atan2(o.vy, o.vx), 200, "espada");
+        o.atingidos.push(e);
+      }
+    }
+    if (o.deixaFenda) {
+      o.fendaT = (o.fendaT || 0) + dt;
+      if (o.fendaT > .12) { o.fendaT = 0; criarFenda(o.x, o.y, o.dano * .18); }
+    }
+  }
+  EXTRAS.ondas = EXTRAS.ondas.filter(o => o.t > 0);
+
+  /* feixes (só visual, o dano é instantâneo) */
+  for (const f of EXTRAS.feixes) f.t -= dt;
+  EXTRAS.feixes = EXTRAS.feixes.filter(f => f.t > 0);
+
+  /* raios */
+  for (const r of EXTRAS.raios) r.t -= dt;
+  EXTRAS.raios = EXTRAS.raios.filter(r => r.t > 0);
+
+  /* bigornas */
+  for (const b of EXTRAS.bigornas) {
+    b.t -= dt;
+    if (b.queda) {
+      b.y += b.vy * dt;
+      if (b.y >= b.alvo.y) {
+        b.y = b.alvo.y;
+        if (!b.explodiu) {
+          b.explodiu = true;
+          G.shake = 15; G.hitstop = .1;
+          efeitos.push({ tipo:"onda", x:b.x, y:b.y, r:10, rMax:150, vida:.4, max:.4, cor:"#e8c07a", grosso:true });
+          for (const e of inimigos) {
+            if (!e.morto && dist2(e, b) < 150*150)
+              bater(e, ARMAS.martelo.dano * 1.1, Math.atan2(e.y-b.y, e.x-b.x), 620, "martelo");
+          }
+        }
+      }
+    } else {
+      b.x += b.vx * dt; b.y += b.vy * dt;
+      if (b.volta && !b.voltando && b.t < .48) { b.voltando = true; b.atingidos = []; }
+      if (b.voltando) {
+        const a = Math.atan2(p.y - b.y, p.x - b.x);
+        b.vx = Math.cos(a) * 760; b.vy = Math.sin(a) * 760;
+      }
+      for (const e of inimigos) {
+        if (e.morto || b.atingidos.includes(e)) continue;
+        if (dist2(e, b) < Math.pow(e.r + 20, 2)) {
+          bater(e, ARMAS.martelo.dano * .8, Math.atan2(b.vy, b.vx), 420, "martelo");
+          b.atingidos.push(e);
+          if (b.arrasta && b.voltando) { e.vx += (p.x - e.x) * 3.2; e.vy += (p.y - e.y) * 3.2; }
+        }
+      }
+    }
+  }
+  EXTRAS.bigornas = EXTRAS.bigornas.filter(b => b.t > 0);
+
+  /* projéteis que convergem ou dividem */
+  for (const b of projeteis) {
+    if (b.converge) {
+      b.converge.t += dt;
+      const a = Math.atan2(b.vy, b.vx);
+      const alvoA = b.converge.alvoAng;
+      let da = alvoA - a;
+      while (da > Math.PI) da -= TAU; while (da < -Math.PI) da += TAU;
+      const na = a + da * Math.min(1, dt * 5);
+      const v = Math.hypot(b.vx, b.vy);
+      b.vx = Math.cos(na) * v; b.vy = Math.sin(na) * v;
+    }
+  }
+}
+
+/* divisão de projéteis ao acertar (chamado do combate) */
+function aoProjetilAcertar(b, e) {
+  if (b.regra === "divide" && !b.jaDividiu) {
+    b.jaDividiu = true;
+    for (const off of [-.6, .6, Math.PI]) {
+      const a = Math.atan2(b.vy, b.vx) + off;
+      projeteis.push({ x:b.x, y:b.y, vx:Math.cos(a)*520, vy:Math.sin(a)*520, r:5,
+        dano:b.dano*.75, vida:.8, perfura:2, atingidos:[e], cor:b.cor, knock:60, arma:b.arma });
+    }
+  }
+  if (b.regra === "efeitosVariados") {
+    if (b.indice === 0) e.lento = 1.2;                       // gelo
+    if (b.indice === 1) { e.veneno = 2.5; e.venenoDano = b.dano * .1; }  // veneno
+    if (b.indice === 2) e.atordoado = Math.max(e.atordoado || 0, .35);   // atordoa
+  }
+}
+
+/* ---------- desenho dos extras ---------- */
+function desenharExtras() {
+  /* fendas */
+  for (const f of EXTRAS.fendas) {
+    ctx.globalAlpha = Math.min(.5, f.t * .3);
+    ctx.fillStyle = "#ff9c6b";
+    ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = "#ffcf6b"; ctx.lineWidth = 1.5;
+    ctx.globalAlpha = Math.min(.8, f.t * .4);
+    ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, TAU); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  /* ondas cortantes */
+  for (const o of EXTRAS.ondas) {
+    const a = Math.atan2(o.vy, o.vx);
+    ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(a);
+    ctx.globalAlpha = Math.min(1, o.t * 2);
+    ctx.fillStyle = o.cor;
+    ctx.beginPath(); ctx.ellipse(0, 0, 10, o.largura, 0, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 1; ctx.restore();
+  }
+  /* feixes */
+  for (const f of EXTRAS.feixes) {
+    ctx.globalAlpha = Math.min(1, f.t * 7);
+    ctx.strokeStyle = f.cor; ctx.lineWidth = 7 * Math.min(1, f.t * 7);
+    ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(f.x, f.y);
+    ctx.lineTo(f.x + Math.cos(f.ang) * f.alc, f.y + Math.sin(f.ang) * f.alc);
+    ctx.stroke();
+    ctx.globalAlpha = 1; ctx.lineCap = "butt";
+  }
+  /* raios */
+  for (const r of EXTRAS.raios) {
+    ctx.globalAlpha = Math.min(1, r.t * 5);
+    ctx.strokeStyle = "#ffe08a"; ctx.lineWidth = 4;
+    ctx.beginPath();
+    let x = r.x, y = r.y - 300;
+    ctx.moveTo(x, y);
+    for (let i = 0; i < 6; i++) { x += rnd(-16, 16); y += 50; ctx.lineTo(x, y); }
+    ctx.lineTo(r.x, r.y);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  /* orbes */
+  for (const o of EXTRAS.orbes) {
+    ctx.fillStyle = "#a9c8ff";
+    ctx.beginPath(); ctx.arc(o.x || p.x, o.y || p.y, 8, 0, TAU); ctx.fill();
+    ctx.globalAlpha = .3;
+    ctx.beginPath(); ctx.arc(o.x || p.x, o.y || p.y, 14, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+  /* bigornas */
+  for (const b of EXTRAS.bigornas) {
+    ctx.fillStyle = "#e8c07a";
+    ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(G.t * 9);
+    ctx.fillRect(-13, -10, 26, 20);
+    ctx.restore();
+  }
+  /* blindagem */
+  if (EXTRAS.blindagem > 0) {
+    ctx.strokeStyle = "#ffcf6b"; ctx.lineWidth = 3;
+    ctx.globalAlpha = Math.min(.9, EXTRAS.blindagem);
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 9, 0, TAU); ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
+/* ==========================================================
+   HUB — a tela onde você VÊ e ESCOLHE.
+   Abas: JOGAR · ESCOLAS · PODERES · ARMAS · VISUAL
+   ========================================================== */
+
+const HUB = {
+  aberto: true,
+  aba: 0,
+  abas: ["Jogar", "Escolas", "Poderes", "Armas", "Visual"],
+  scroll: 0,
+  scrollMax: 0,
+  toques: [],       // áreas clicáveis desta tela {x,y,w,h,fn}
+  aviso: null,
+  avisoT: 0,
+};
+
+/* ---------- CATÁLOGO VISUAL (gasta fragmentos) ---------- */
+const VISUAL = {
+  corpos: [
+    { id:"circulo",  nome:"Círculo",  custo:0,    forma:"circulo" },
+    { id:"losango",  nome:"Losango",  custo:120,  forma:"losango" },
+    { id:"quadrado", nome:"Quadrado", custo:120,  forma:"quadrado" },
+    { id:"triangulo",nome:"Ponta",    custo:260,  forma:"triangulo" },
+    { id:"estrela",  nome:"Estrela",  custo:600,  forma:"estrela" },
+    { id:"hexagono", nome:"Hexágono", custo:600,  forma:"hexagono" },
+  ],
+  cores: [
+    { id:"osso",   nome:"Osso",     custo:0,   cor:"#eaf6ff" },
+    { id:"lima",   nome:"Lima",     custo:80,  cor:"#7fd858" },
+    { id:"ambar",  nome:"Âmbar",    custo:80,  cor:"#ffcf6b" },
+    { id:"ciano",  nome:"Ciano",    custo:180, cor:"#8be9ff" },
+    { id:"violeta",nome:"Violeta",  custo:180, cor:"#c9a7ff" },
+    { id:"brasa",  nome:"Brasa",    custo:400, cor:"#ff8a5c" },
+    { id:"jade",   nome:"Jade",     custo:400, cor:"#4fe0b0" },
+    { id:"aurora", nome:"Aurora",   custo:900, cor:"aurora" },   // gradiente animado
+  ],
+  rastros: [
+    { id:"nenhum", nome:"Nenhum",   custo:0 },
+    { id:"poeira", nome:"Poeira",   custo:150 },
+    { id:"faisca", nome:"Faísca",   custo:350 },
+    { id:"eco",    nome:"Eco",      custo:700 },
+  ],
+};
+
+function visualSave() {
+  const s = META.save;
+  if (!s.visual) s.visual = { corpo:"circulo", cor:"osso", rastro:"nenhum", comprados:["circulo","osso","nenhum"] };
+  return s.visual;
+}
+
+function temItem(id) { return visualSave().comprados.includes(id); }
+
+function comprarOuEquipar(cat, item) {
+  const v = visualSave();
+  if (!temItem(item.id)) {
+    if (META.save.fragmentos < item.custo) { avisar("fragmentos insuficientes"); return; }
+    META.save.fragmentos -= item.custo;
+    v.comprados.push(item.id);
+    avisar(`${item.nome} desbloqueado!`);
+    som("nivel");
+  } else { som("xp"); }
+  v[cat] = item.id;
+  P.gravarSave(localStorage, META.save);
+}
+
+function avisar(txt) { HUB.aviso = txt; HUB.avisoT = 2.2; }
+
+function corDoJogador(t) {
+  const v = visualSave();
+  const c = VISUAL.cores.find(x => x.id === v.cor);
+  if (!c) return "#eaf6ff";
+  if (c.cor === "aurora") {
+    const h = (t * 40) % 360;
+    return `hsl(${h}, 85%, 72%)`;
+  }
+  return c.cor;
+}
+function formaDoJogador() {
+  const v = visualSave();
+  const f = VISUAL.corpos.find(x => x.id === v.corpo);
+  return f ? f.forma : "circulo";
+}
+function rastroDoJogador() { return visualSave().rastro; }
+
+/* ---------- desenho de formas ---------- */
+function desenharForma(cx, cy, r, forma) {
+  ctx.beginPath();
+  if (forma === "circulo") { ctx.arc(cx, cy, r, 0, TAU); }
+  else if (forma === "quadrado") { ctx.rect(cx-r*.86, cy-r*.86, r*1.72, r*1.72); }
+  else if (forma === "losango") {
+    ctx.moveTo(cx, cy-r*1.15); ctx.lineTo(cx+r*.95, cy); ctx.lineTo(cx, cy+r*1.15); ctx.lineTo(cx-r*.95, cy);
+  }
+  else if (forma === "triangulo") {
+    ctx.moveTo(cx+r*1.15, cy); ctx.lineTo(cx-r*.8, cy-r*.95); ctx.lineTo(cx-r*.8, cy+r*.95);
+  }
+  else if (forma === "hexagono") {
+    for (let i=0;i<6;i++){ const a=(i/6)*TAU; const px=cx+Math.cos(a)*r*1.05, py=cy+Math.sin(a)*r*1.05;
+      i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
+  }
+  else if (forma === "estrela") {
+    for (let i=0;i<10;i++){ const a=(i/10)*TAU - Math.PI/2; const rr = i%2 ? r*.52 : r*1.25;
+      const px=cx+Math.cos(a)*rr, py=cy+Math.sin(a)*rr; i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
+  }
+  ctx.closePath();
+  ctx.fill();
+}
+
+/* ==========================================================
+   DESENHO DO HUB
+   ========================================================== */
+function desenharHub() {
+  HUB.toques = [];
+  ctx.fillStyle = "#0b0f0e";
+  ctx.fillRect(0, 0, W, H);
+
+  /* topo: fragmentos */
+  ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = "#ffcf6b"; ctx.font = "bold 15px Sora, sans-serif";
+  ctx.fillText(`💎 ${META.save.fragmentos}`, 18, 32);
+  ctx.textAlign = "right";
+  ctx.fillStyle = "#7d8f7f"; ctx.font = "12px Sora, sans-serif";
+  ctx.fillText(`${META.save.runs} runs · recorde ${META.save.melhorTempo}s`, W - 18, 32);
+
+  /* abas */
+  const abaY = 50, abaH = 34;
+  const larg = (W - 24) / HUB.abas.length;
+  HUB.abas.forEach((nome, i) => {
+    const x = 12 + i * larg;
+    const sel = HUB.aba === i;
+    ctx.fillStyle = sel ? "rgba(127,216,88,.16)" : "rgba(255,255,255,.04)";
+    ctx.beginPath(); ctx.roundRect(x+2, abaY, larg-4, abaH, 9); ctx.fill();
+    if (sel) { ctx.strokeStyle = "#7fd858"; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.roundRect(x+2, abaY, larg-4, abaH, 9); ctx.stroke(); }
+    ctx.fillStyle = sel ? "#7fd858" : "#8a9d8f";
+    ctx.font = `${sel?"bold ":""}11px Sora, sans-serif`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(nome, x + larg/2, abaY + abaH/2);
+    HUB.toques.push({ x:x, y:abaY, w:larg, h:abaH, fn:()=>{ HUB.aba=i; HUB.scroll=0; som("xp"); } });
+  });
+  ctx.textBaseline = "alphabetic";
+
+  /* conteúdo com recorte e rolagem */
+  const topo = abaY + abaH + 14;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, topo, W, H - topo); ctx.clip();
+  ctx.translate(0, -HUB.scroll);
+  const y = topo + 6;
+  let fim = y;
+  if (HUB.aba === 0) fim = abaJogar(y);
+  if (HUB.aba === 1) fim = abaEscolas(y);
+  if (HUB.aba === 2) fim = abaPoderes(y);
+  if (HUB.aba === 3) fim = abaArmas(y);
+  if (HUB.aba === 4) fim = abaVisual(y);
+  ctx.restore();
+  HUB.scrollMax = Math.max(0, fim - H + 30);
+
+  /* aviso flutuante */
+  if (HUB.avisoT > 0) {
+    ctx.globalAlpha = Math.min(1, HUB.avisoT);
+    ctx.fillStyle = "rgba(20,26,20,.95)";
+    ctx.beginPath(); ctx.roundRect(W/2-130, H-96, 260, 38, 10); ctx.fill();
+    ctx.strokeStyle = "#7fd858"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect(W/2-130, H-96, 260, 38, 10); ctx.stroke();
+    ctx.fillStyle = "#cfe0d2"; ctx.font = "13px Sora, sans-serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(HUB.aviso, W/2, H-77);
+    ctx.globalAlpha = 1; ctx.textBaseline = "alphabetic";
+  }
+}
+
+/* helper de cartão */
+function cartao(x, y, w, h, corBorda, preenche) {
+  ctx.fillStyle = preenche || "rgba(255,255,255,.045)";
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, 12); ctx.fill();
+  if (corBorda) { ctx.strokeStyle = corBorda; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 12); ctx.stroke(); }
+}
+function toqueVisivel(x, y, w, h, fn) {
+  HUB.toques.push({ x, y:y - HUB.scroll, w, h, fn, rolavel:true });
+}
+
+/* ——— ABA JOGAR ——— */
+function abaJogar(y) {
+  const M = 18, w = W - M*2;
+  const s = superAtual();
+
+  // botão grande jogar
+  cartao(M, y, w, 92, "#7fd858", "rgba(127,216,88,.14)");
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillStyle = "#7fd858"; ctx.font = "bold 26px Sora, sans-serif";
+  ctx.fillText("▶  JOGAR", W/2, y + 46);
+  toqueVisivel(M, y, w, 92, () => { HUB.aberto = false; reiniciar(); });
+  y += 108;
+
+  // resumo do equipamento
+  ctx.textAlign = "left"; ctx.fillStyle = "#7d8f7f"; ctx.font = "11px Sora, sans-serif";
+  ctx.fillText("EQUIPADO", M, y); y += 12;
+  cartao(M, y, w, 62);
+  ctx.font = "26px sans-serif"; ctx.fillStyle = "#fff";
+  ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  ctx.fillText(s.icone, M + 16, y + 31);
+  ctx.font = "bold 15px Sora, sans-serif";
+  ctx.fillStyle = P.ESCOLAS[s.escola] ? P.ESCOLAS[s.escola].cor : "#fff";
+  ctx.fillText(s.nome, M + 52, y + 24);
+  ctx.font = "12px Sora, sans-serif"; ctx.fillStyle = "#8a9d8f";
+  ctx.fillText(s.desc, M + 52, y + 42);
+  y += 74;
+
+  // ressonância ativa
+  const ativas = Object.values(META.ressonancia || {}).filter(r => r.ativa);
+  const con = META.conexao || "carregando";
+  ctx.textAlign = "left"; ctx.fillStyle = "#7d8f7f"; ctx.font = "11px Sora, sans-serif";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText("RESSONÂNCIA DE HOJE", M, y);
+  // selo de status da conexão
+  ctx.textAlign = "right";
+  const selo = { ok:["● conectado ao LIFE","#7fd858"], carregando:["● lendo…","#8a9d8f"],
+    erro:["● sem conexão","#ff6b6b"], origem:["● origem bloqueada","#ffcf6b"],
+    "sem-api":["● API não configurada","#ffcf6b"] }[con] || ["",""];
+  ctx.fillStyle = selo[1]; ctx.font = "10px Sora, sans-serif";
+  ctx.fillText(selo[0], W - M, y);
+  ctx.textAlign = "left";
+  y += 12;
+
+  if (con !== "ok" && con !== "carregando") {
+    // problema de conexão: explica de verdade em vez de fingir que não há avanço
+    const h = 92;
+    cartao(M, y, w, h, "#ffcf6b", "rgba(255,207,107,.08)");
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#ffcf6b"; ctx.font = "bold 13px Sora, sans-serif";
+    ctx.fillText("não consegui ler o LIFE", M + 16, y + 20);
+    ctx.fillStyle = "#8a9d8f"; ctx.font = "11px Sora, sans-serif";
+    ctx.textBaseline = "alphabetic";
+    let yy = y + 36;
+    const msg = con === "origem"
+      ? "Você abriu o arquivo baixado. Hospede no GitHub Pages e abra pela URL — assim o navegador permite a conexão."
+      : con === "sem-api" ? "A URL da planilha não foi configurada neste arquivo."
+      : `Erro: ${META.conexaoDetalhe || "desconhecido"}`;
+    yy = textoQuebrado(msg, M + 16, yy, w - 32, 15);
+    ctx.fillStyle = "#5f7264"; ctx.font = "10px Sora, sans-serif";
+    ctx.fillText("o jogo funciona normalmente — só sem os bônus", M + 16, y + h - 10);
+    toqueVisivel(M, y, w, h, () => { avisar("tentando de novo…"); aplicarRessonancia(); });
+    y += h + 10;
+    // botão tentar de novo
+    cartao(M, y, w, 38, "rgba(255,255,255,.16)");
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillStyle = "#cfe0d2"; ctx.font = "bold 12px Sora, sans-serif";
+    ctx.fillText("↻ tentar conectar de novo", W/2, y + 19);
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+    toqueVisivel(M, y, w, 38, () => { avisar("tentando de novo…"); aplicarRessonancia(); });
+    return y + 50;
+  }
+
+  if (!ativas.length) {
+    cartao(M, y, w, 54);
+    ctx.fillStyle = "#8a9d8f"; ctx.font = "12px Sora, sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.fillText("nenhuma trilha avançada hoje", M + 16, y + 22);
+    ctx.fillStyle = "#5f7264"; ctx.font = "11px Sora, sans-serif";
+    ctx.fillText(META.conexaoDetalhe ? `LIFE lido · ${META.conexaoDetalhe}` : "avance no LIFE para ganhar bônus", M + 16, y + 39);
+    ctx.textBaseline = "alphabetic";
+    y += 66;
+  } else {
+    ativas.forEach(r => {
+      cartao(M, y, w, 46, r.cor);
+      ctx.textBaseline = "middle";
+      ctx.font = "20px sans-serif"; ctx.fillStyle = "#fff";
+      ctx.fillText(r.icone, M + 14, y + 23);
+      ctx.font = "bold 13px Sora, sans-serif"; ctx.fillStyle = r.cor;
+      ctx.fillText(`${r.nome}  +${Math.round(r.bonus*100)}%`, M + 44, y + 23);
+      ctx.textAlign = "right"; ctx.font = "11px Sora, sans-serif"; ctx.fillStyle = "#8a9d8f";
+      ctx.fillText(r.categoria, W - M - 14, y + 23);
+      ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+      y += 54;
+    });
+  }
+  return y;
+}
+
+/* ——— ABA ESCOLAS ——— */
+function abaEscolas(y) {
+  const M = 18, w = W - M*2;
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#8a9d8f"; ctx.font = "12px Sora, sans-serif";
+  y = textoQuebrado("Cada escola liga a uma categoria do seu LIFE. Avançar na vida real desperta a escola — e ela nunca é tirada de você depois de aberta.", M, y + 4, w, 17) + 12;
+
+  for (const esc of Object.values(P.ESCOLAS)) {
+    const r = (META.ressonancia || {})[esc.id] || {};
+    const aberta = META.save.escolasAbertas.includes(esc.id);
+    const h = 96;
+    cartao(M, y, w, h, aberta ? esc.cor : "rgba(255,255,255,.10)",
+           aberta ? "rgba(255,255,255,.05)" : "rgba(255,255,255,.02)");
+    ctx.globalAlpha = aberta ? 1 : .45;
+
+    ctx.textBaseline = "middle";
+    ctx.font = "28px sans-serif"; ctx.fillStyle = "#fff";
+    ctx.fillText(esc.icone, M + 16, y + 30);
+    ctx.font = "bold 16px Sora, sans-serif"; ctx.fillStyle = esc.cor;
+    ctx.fillText(esc.nome, M + 56, y + 24);
+    ctx.font = "italic 11px Sora, sans-serif"; ctx.fillStyle = "#8a9d8f";
+    ctx.fillText(esc.lema, M + 56, y + 41);
+
+    // estado
+    ctx.textAlign = "right";
+    if (r.ativa) { ctx.fillStyle = esc.cor; ctx.font = "bold 12px Sora, sans-serif";
+      ctx.fillText(`ativa +${Math.round((r.bonus||0)*100)}%`, W - M - 14, y + 24); }
+    else if (aberta) { ctx.fillStyle = "#7d8f7f"; ctx.font = "11px Sora, sans-serif";
+      ctx.fillText("dormindo", W - M - 14, y + 24); }
+    else { ctx.fillStyle = "#7d8f7f"; ctx.font = "11px Sora, sans-serif";
+      ctx.fillText("🔒 fechada", W - M - 14, y + 24); }
+    ctx.textAlign = "left";
+
+    // como despertar
+    ctx.font = "11px Sora, sans-serif"; ctx.fillStyle = "#6f8274";
+    ctx.fillText(`categoria: ${esc.categoria}`, M + 16, y + 62);
+    ctx.fillStyle = "#5f7264";
+    const dica = r.dias === null || r.dias === undefined
+      ? "sem registro no LIFE"
+      : r.dias === 0 ? "avançou hoje ✓" : `parada há ${r.dias} dia(s)`;
+    ctx.fillText(dica, M + 16, y + 79);
+
+    // supers da escola
+    ctx.textAlign = "right";
+    const meus = esc.supers.filter(id => META.save.supersAbertos.includes(id)).length;
+    ctx.fillStyle = "#7d8f7f"; ctx.font = "11px Sora, sans-serif";
+    ctx.fillText(`${meus}/${esc.supers.length} poderes`, W - M - 14, y + 72);
+    ctx.textAlign = "left";
+    if (!esc.implementada) {
+      ctx.fillStyle = "#5f7264"; ctx.font = "9px Sora, sans-serif";
+      ctx.textAlign = "right";
+      ctx.fillText("em construção", W - M - 14, y + 88);
+      ctx.textAlign = "left";
+    }
+    ctx.globalAlpha = 1;
+    ctx.textBaseline = "alphabetic";
+    y += h + 10;
+  }
+  return y;
+}
+
+/* ——— ABA PODERES ——— */
+function abaPoderes(y) {
+  const M = 18, w = W - M*2;
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#8a9d8f"; ctx.font = "12px Sora, sans-serif";
+  y = textoQuebrado("O superpoder é manual: você decide a hora. Escolha um para equipar.", M, y + 4, w, 17) + 12;
+
+  const disp = P.supersDisponiveis(META.save);
+  const todos = Object.values(P.SUPERS);
+  for (const sp of todos) {
+    const aberto = disp.some(d => d.id === sp.id);
+    const equipado = META.save.superEquipado === sp.id;
+    const esc = P.ESCOLAS[sp.escola];
+    const h = 72;
+    cartao(M, y, w, h, equipado ? "#7fd858" : (aberto ? esc.cor : "rgba(255,255,255,.08)"),
+           equipado ? "rgba(127,216,88,.12)" : "rgba(255,255,255,.04)");
+    ctx.globalAlpha = aberto ? 1 : .35;
+    ctx.textBaseline = "middle";
+    ctx.font = "26px sans-serif"; ctx.fillStyle = "#fff";
+    ctx.fillText(sp.icone, M + 16, y + 36);
+    ctx.font = "bold 15px Sora, sans-serif"; ctx.fillStyle = aberto ? esc.cor : "#8a9d8f";
+    ctx.fillText(sp.nome, M + 54, y + 24);
+    ctx.font = "12px Sora, sans-serif"; ctx.fillStyle = "#8a9d8f";
+    ctx.fillText(sp.desc, M + 54, y + 44);
+    ctx.textAlign = "right";
+    ctx.font = "10px Sora, sans-serif"; ctx.fillStyle = "#6f8274";
+    ctx.fillText(`${esc.icone} ${esc.nome} · ${sp.cd}s`, W - M - 14, y + 24);
+    if (equipado) { ctx.fillStyle = "#7fd858"; ctx.font = "bold 11px Sora, sans-serif";
+      ctx.fillText("EQUIPADO", W - M - 14, y + 46); }
+    else if (!aberto) { ctx.fillStyle = "#6f8274"; ctx.font = "10px Sora, sans-serif";
+      ctx.fillText("🔒", W - M - 14, y + 46); }
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+    ctx.globalAlpha = 1;
+    if (aberto) toqueVisivel(M, y, w, h, () => {
+      META.save.superEquipado = sp.id;
+      SUPER.cdMax = sp.cd; SUPER.cdBase = sp.cd;
+      P.gravarSave(localStorage, META.save);
+      avisar(`${sp.nome} equipado`); som("nivel");
+    });
+    y += h + 9;
+  }
+  return y;
+}
+
+/* ——— ABA ARMAS ——— */
+function abaArmas(y) {
+  const M = 18, w = W - M*2;
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#8a9d8f"; ctx.font = "12px Sora, sans-serif";
+  y = textoQuebrado("Use uma arma para ganhar maestria com ela. Ao encher a barra, você escolhe um caminho — e é permanente.", M, y + 4, w, 17) + 12;
+
+  for (const arma of ["espada", "varinha", "martelo"]) {
+    const est = P.estadoArma(META.save, arma);
+    const at = P.armaAtual(META.save, arma);
+    const arv = P.ARVORES[arma];
+    const h = 104;
+    cartao(M, y, w, h, est.tier === 3 ? "#ffcf6b" : "rgba(255,255,255,.10)");
+    ctx.textBaseline = "middle";
+    ctx.font = "26px sans-serif"; ctx.fillStyle = "#fff";
+    ctx.fillText(at.icone, M + 16, y + 28);
+    ctx.font = "bold 15px Sora, sans-serif"; ctx.fillStyle = "#fff";
+    ctx.fillText(at.nome, M + 54, y + 21);
+    ctx.font = "12px Sora, sans-serif"; ctx.fillStyle = "#8a9d8f";
+    ctx.fillText(at.desc, M + 54, y + 39);
+    ctx.textAlign = "right"; ctx.font = "11px Sora, sans-serif";
+    ctx.fillStyle = est.tier === 3 ? "#ffcf6b" : "#7d8f7f";
+    ctx.fillText(`Tier ${est.tier}`, W - M - 14, y + 21);
+    ctx.textAlign = "left";
+
+    // barra de maestria
+    ctx.fillStyle = "rgba(255,255,255,.08)";
+    ctx.fillRect(M + 16, y + 58, w - 32, 7);
+    ctx.fillStyle = est.tier === 3 ? "#ffcf6b" : "#7fd858";
+    ctx.fillRect(M + 16, y + 58, (w - 32) * est.pct, 7);
+    ctx.font = "10px Sora, sans-serif"; ctx.fillStyle = "#6f8274";
+    ctx.fillText(est.prox ? `${Math.round(est.maestria)} / ${est.prox} de maestria` : "evolução máxima", M + 16, y + 78);
+
+    // caminho trilhado
+    ctx.textAlign = "right"; ctx.fillStyle = "#6f8274"; ctx.font = "10px Sora, sans-serif";
+    const trilha = est.ramo
+      ? `${arv.base.nome} › ${arv.ramos[est.ramo].nome}${est.final ? " › " + arv.ramos[est.ramo].finais[est.final].nome : ""}`
+      : `${Object.keys(arv.ramos).length} caminhos possíveis`;
+    ctx.fillText(trilha, W - M - 14, y + 78);
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+    y += h + 10;
+  }
+
+  // contagem de conteúdo
+  ctx.fillStyle = "#5f7264"; ctx.font = "11px Sora, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("27 formas finais possíveis no total", W/2, y + 14);
+  ctx.textAlign = "left";
+  return y + 30;
+}
+
+/* ——— ABA VISUAL ——— */
+function abaVisual(y) {
+  const M = 18, w = W - M*2;
+
+  // prévia do personagem
+  cartao(M, y, w, 96);
+  const cx = W/2, cy = y + 48;
+  const cor = corDoJogador(G.t);
+  ctx.fillStyle = cor;
+  desenharForma(cx, cy, 20, formaDoJogador());
+  ctx.fillStyle = "#8a9d8f"; ctx.font = "11px Sora, sans-serif"; ctx.textAlign = "center";
+  ctx.fillText("prévia", cx, y + 84);
+  ctx.textAlign = "left";
+  y += 108;
+
+  y = grupoVisual("FORMA", VISUAL.corpos, "corpo", y, (item, x, yy, s) => {
+    ctx.fillStyle = temItem(item.id) ? "#eaf6ff" : "#4a5a4e";
+    desenharForma(x + s/2, yy + s/2 - 4, 13, item.forma);
+  });
+  y = grupoVisual("COR", VISUAL.cores, "cor", y, (item, x, yy, s) => {
+    ctx.fillStyle = item.cor === "aurora" ? `hsl(${(G.t*40)%360},85%,72%)` : item.cor;
+    ctx.globalAlpha = temItem(item.id) ? 1 : .3;
+    ctx.beginPath(); ctx.arc(x + s/2, yy + s/2 - 4, 13, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+  y = grupoVisual("RASTRO", VISUAL.rastros, "rastro", y, (item, x, yy, s) => {
+    ctx.fillStyle = temItem(item.id) ? "#8be9ff" : "#4a5a4e";
+    const n = item.id === "nenhum" ? 0 : item.id === "poeira" ? 3 : item.id === "faisca" ? 5 : 7;
+    if (!n) { ctx.font = "16px Sora"; ctx.textAlign="center"; ctx.fillText("—", x+s/2, yy+s/2); ctx.textAlign="left"; }
+    for (let i = 0; i < n; i++) {
+      ctx.globalAlpha = temItem(item.id) ? 1 - i/n : .25;
+      ctx.beginPath(); ctx.arc(x + s/2 - 14 + i*5, yy + s/2 - 4, 3.5 - i*.3, 0, TAU); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  });
+  return y;
+}
+
+function grupoVisual(titulo, itens, cat, y, pintar) {
+  const M = 18, w = W - M*2;
+  ctx.textAlign = "left"; ctx.fillStyle = "#7d8f7f"; ctx.font = "11px Sora, sans-serif";
+  ctx.fillText(titulo, M, y); y += 10;
+  const porLinha = 4, s = (w - (porLinha-1)*8) / porLinha;
+  itens.forEach((item, i) => {
+    const col = i % porLinha, lin = Math.floor(i / porLinha);
+    const x = M + col * (s + 8), yy = y + lin * (s + 26);
+    const equip = visualSave()[cat] === item.id;
+    const tem = temItem(item.id);
+    cartao(x, yy, s, s, equip ? "#7fd858" : (tem ? "rgba(255,255,255,.14)" : "rgba(255,255,255,.06)"),
+           equip ? "rgba(127,216,88,.14)" : "rgba(255,255,255,.04)");
+    pintar(item, x, yy, s);
+    ctx.textAlign = "center";
+    ctx.font = "9px Sora, sans-serif";
+    ctx.fillStyle = equip ? "#7fd858" : "#7d8f7f";
+    ctx.fillText(item.nome, x + s/2, yy + s - 6);
+    if (!tem) {
+      ctx.fillStyle = META.save.fragmentos >= item.custo ? "#ffcf6b" : "#6f6a52";
+      ctx.font = "bold 9px Sora, sans-serif";
+      ctx.fillText(`💎${item.custo}`, x + s/2, yy + s + 12);
+    }
+    ctx.textAlign = "left";
+    toqueVisivel(x, yy, s, s, () => comprarOuEquipar(cat, item));
+  });
+  const linhas = Math.ceil(itens.length / porLinha);
+  return y + linhas * (s + 26) + 12;
+}
+
+function textoQuebrado(txt, x, y, larg, lh) {
+  const palavras = String(txt).split(" ");
+  let linha = "", ly = y;
+  for (const w of palavras) {
+    const t = linha ? linha + " " + w : w;
+    if (ctx.measureText(t).width > larg && linha) { ctx.fillText(linha, x, ly); linha = w; ly += lh; }
+    else linha = t;
+  }
+  if (linha) { ctx.fillText(linha, x, ly); ly += lh; }
+  return ly;
+}
+
+/* ---------- interação do hub ---------- */
+let hubArraste = null;
+function hubDown(q) {
+  hubArraste = { y:q.y, scroll:HUB.scroll, moveu:false };
+}
+function hubMove(q) {
+  if (!hubArraste) return;
+  const d = q.y - hubArraste.y;
+  if (Math.abs(d) > 6) hubArraste.moveu = true;
+  HUB.scroll = Math.max(0, Math.min(HUB.scrollMax, hubArraste.scroll - d));
+}
+function hubUp(q) {
+  if (!hubArraste) return;
+  const moveu = hubArraste.moveu;
+  hubArraste = null;
+  if (moveu) return;
+  for (const t of HUB.toques) {
+    if (q.x >= t.x && q.x <= t.x + t.w && q.y >= t.y && q.y <= t.y + t.h) { t.fn(); return; }
+  }
+}
+
+/* ==========================================================
+   PROTÓTIPO DE COMBATE — teste de "game feel"
+   Objetivo: descobrir se bater em coisa aqui é GOSTOSO.
+   Sem meta-progressão, sem dados do LIFE. Só a mecânica.
+   ========================================================== */
+
+const cv = document.getElementById("cv");
+const ctx = cv.getContext("2d");
+let W = 0, H = 0, DPR = 1;
+
+function resize() {
+  DPR = Math.min(devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  cv.width = W * DPR; cv.height = H * DPR;
+  cv.style.width = W + "px"; cv.style.height = H + "px";
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+addEventListener("resize", resize);
+resize();
+
+/* ---------- helpers ---------- */
+const TAU = Math.PI * 2;
+const rnd = (a, b) => a + Math.random() * (b - a);
+const rint = (a, b) => Math.floor(rnd(a, b + 1));
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp = (a, b, t) => a + (b - a) * t;
+const dist2 = (a, b) => { const dx = a.x - b.x, dy = a.y - b.y; return dx * dx + dy * dy; };
+
+/* ---------- estado global ---------- */
+const G = {
+  t: 0, dt: 0, run: 0,
+  shake: 0, shakeX: 0, shakeY: 0,
+  hitstop: 0,          // congela o mundo alguns ms no impacto (peso!)
+  over: false,
+  kills: 0,
+};
+
+const cam = { x: 0, y: 0 };
+
+/* ---------- ESTRUTURA DA RODADA ----------
+   0–60s   fase 1: inimigos normais
+   60s     MINI-CHEFE (spawn normal pausa)
+   matou   fase 2: +70% de inimigos
+   +60s    CHEFE FINAL
+   matou   VITÓRIA — a rodada acaba
+------------------------------------------ */
+const FASE = {
+  n: 1,                 // 1 = início, 2 = pós mini-chefe, 3 = chefe final
+  chefe: null,
+  proximoEvento: 60,    // segundos até o próximo chefe
+  multSpawn: 1,
+  tetoInimigos: 34,
+  vitoria: false,
+  aviso: 0, avisoTxt: "",
+};
+const AUMENTO_POS_MINICHEFE = 1.7;   // +70% no ritmo de spawn
+const TETO_POS_MINICHEFE = 50;
+
+/* ---------- ARMAS: cada uma precisa ter um "peso" próprio ---------- */
+const ARMAS = {
+  espada: {
+    nome: "Espada", icone: "🗡️", cor: "#eaf6ff",
+    cd: 0.34, dano: 22, alcance: 96, arco: 2.4,
+    knock: 260, shake: 3.5, hitstop: 0.045,
+    desc: "corta vários de perto",
+    atacar(p) { if (typeof atacarEspada === "function") return atacarEspada(p, this); this.padrao(p); },
+    padrao(p) {
+      const ang = p.mira;
+      efeitos.push({ tipo: "arco", x: p.x, y: p.y, ang, r: this.alcance, arco: this.arco, vida: 0.16, max: 0.16, cor: this.cor });
+      let acertou = 0;
+      for (const e of inimigos) {
+        if (e.morto) continue;
+        const d = Math.hypot(e.x - p.x, e.y - p.y);
+        if (d > this.alcance + e.r) continue;
+        let da = Math.atan2(e.y - p.y, e.x - p.x) - ang;
+        while (da > Math.PI) da -= TAU; while (da < -Math.PI) da += TAU;
+        if (Math.abs(da) > this.arco / 2) continue;
+        bater(e, this.dano, ang, this.knock, 'espada');
+        acertou++;
+      }
+      if (acertou) { G.shake = Math.max(G.shake, this.shake + acertou); G.hitstop = Math.max(G.hitstop, this.hitstop); }
+      som(acertou ? "hit" : "swing");
+    }
+  },
+  varinha: {
+    nome: "Varinha", icone: "🪄", cor: "#8be9ff",
+    cd: 0.26, dano: 15, vel: 700, knock: 90, shake: 1.2, hitstop: 0.02,
+    desc: "atinge de longe, perfura",
+    atacar(p) { if (typeof atacarVarinha === "function") return atacarVarinha(p, this); this.padrao(p); },
+    padrao(p) {
+      projeteis.push({
+        x: p.x + Math.cos(p.mira) * 22, y: p.y + Math.sin(p.mira) * 22,
+        vx: Math.cos(p.mira) * this.vel, vy: Math.sin(p.mira) * this.vel,
+        r: 7, dano: this.dano, vida: 1.4, perfura: 4, atingidos: [],
+        cor: this.cor, knock: this.knock, arma: this,
+      });
+      som("magia");
+      p.recuo = 0.10;
+    }
+  },
+  martelo: {
+    nome: "Martelo", icone: "🔨", cor: "#ffcf6b",
+    cd: 0.95, dano: 96, alcance: 100, arco: 1.2,
+    knock: 620, shake: 11, hitstop: 0.11,
+    desc: "esmaga o graúdo",
+    atacar(p) { if (typeof atacarMartelo === "function") return atacarMartelo(p, this); this.padrao(p); },
+    padrao(p) {
+      const ang = p.mira;
+      efeitos.push({ tipo: "arco", x: p.x, y: p.y, ang, r: this.alcance, arco: this.arco, vida: 0.26, max: 0.26, cor: this.cor, grosso: true });
+      efeitos.push({ tipo: "onda", x: p.x + Math.cos(ang) * 60, y: p.y + Math.sin(ang) * 60, r: 8, rMax: 86, vida: 0.3, max: 0.3, cor: this.cor });
+      let acertou = 0;
+      for (const e of inimigos) {
+        if (e.morto) continue;
+        const d = Math.hypot(e.x - p.x, e.y - p.y);
+        if (d > this.alcance + e.r) continue;
+        let da = Math.atan2(e.y - p.y, e.x - p.x) - ang;
+        while (da > Math.PI) da -= TAU; while (da < -Math.PI) da += TAU;
+        if (Math.abs(da) > this.arco / 2) continue;
+        bater(e, this.dano, ang, this.knock, 'martelo');
+        e.atordoado = 0.5;
+        acertou++;
+      }
+      if (acertou) { G.shake = Math.max(G.shake, this.shake); G.hitstop = Math.max(G.hitstop, this.hitstop); }
+      som(acertou ? "pesado" : "swing");
+    }
+  },
+};
+const ORDEM_ARMAS = ["espada", "varinha", "martelo"];
+
+/* ---------- SUPERPODER (manual, com cooldown) ---------- */
+const SUPER = {
+  nome: "Estilhaço", icone: "💥", cdMax: 6, cdBase: 6,
+  get icone2() { return (typeof superAtual === "function") ? superAtual().icone : "💥"; },
+  usar(p) {
+    if (typeof superAtual === "function") {
+      const s = superAtual();
+      if (s && s.impl && s.impl.usar) { s.impl.usar(p); return; }
+    }
+    this.usarPadrao(p);
+  },
+  usarPadrao(p) {
+    G.shake = 16; G.hitstop = 0.13;
+    efeitos.push({ tipo: "onda", x: p.x, y: p.y, r: 10, rMax: 300, vida: 0.5, max: 0.5, cor: "#ffe08a", grosso: true });
+    efeitos.push({ tipo: "flash", vida: 0.12, max: 0.12 });
+    for (const e of inimigos) {
+      if (e.morto) continue;
+      const d = Math.hypot(e.x - p.x, e.y - p.y);
+      if (d > 300) continue;
+      const ang = Math.atan2(e.y - p.y, e.x - p.x);
+      bater(e, 90, ang, 900);
+      e.atordoado = 0.8;
+    }
+    for (let i = 0; i < 34; i++) {
+      const a = rnd(0, TAU), v = rnd(180, 560);
+      particulas.push({ x: p.x, y: p.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: rnd(2, 5), vida: rnd(.3, .7), max: .7, cor: "#ffe08a" });
+    }
+    som("super");
+  }
+};
+
+/* ---------- jogador ---------- */
+const p = {
+  x: 0, y: 0, vx: 0, vy: 0, r: 15,
+  vel: 260, mira: -Math.PI / 2,
+  hp: 100, hpMax: 100,
+  arma: "espada", cd: 0, recuo: 0,
+  superCd: 0, inv: 0,
+  xp: 0, nivel: 1, xpProx: 12,
+  passo: 0, lean: 0,
+};
+
+/* ---------- coleções ---------- */
+let inimigos = [], projeteis = [], particulas = [], efeitos = [], orbes = [], numeros = [];
+
+/* ---------- áudio simples (WebAudio, sem assets) ---------- */
+let AC = null;
+function som(tipo) {
+  try {
+    if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.connect(g); g.connect(AC.destination);
+    const n = AC.currentTime;
+    const cfg = {
+      swing:  { f: 220, f2: 90,  t: "sine",     v: .05, d: .10 },
+      hit:    { f: 420, f2: 120, t: "square",   v: .10, d: .09 },
+      pesado: { f: 150, f2: 45,  t: "sawtooth", v: .16, d: .20 },
+      magia:  { f: 760, f2: 340, t: "triangle", v: .07, d: .12 },
+      super:  { f: 190, f2: 55,  t: "sawtooth", v: .20, d: .40 },
+      morte:  { f: 320, f2: 70,  t: "square",   v: .09, d: .16 },
+      xp:     { f: 880, f2: 1250,t: "sine",     v: .05, d: .08 },
+      nivel:  { f: 520, f2: 1050,t: "triangle", v: .12, d: .30 },
+      dano:   { f: 200, f2: 80,  t: "square",   v: .12, d: .18 },
+    }[tipo];
+    if (!cfg) return;
+    o.type = cfg.t;
+    o.frequency.setValueAtTime(cfg.f, n);
+    o.frequency.exponentialRampToValueAtTime(Math.max(20, cfg.f2), n + cfg.d);
+    g.gain.setValueAtTime(cfg.v, n);
+    g.gain.exponentialRampToValueAtTime(0.0001, n + cfg.d);
+    o.start(n); o.stop(n + cfg.d + .02);
+  } catch (e) {}
+}
+
+/* ---------- inimigos ---------- */
+const TIPOS = [
+  { nome: "Slime",   cor: "#8ecf5a", r: 16, hp: 42,  vel: 66,  dano: 8,  xp: 3, peso: 5 },
+  { nome: "Espinho", cor: "#d98cff", r: 13, hp: 28,  vel: 118, dano: 6,  xp: 4, peso: 3 },
+  { nome: "Bloco",   cor: "#ff9c6b", r: 24, hp: 128, vel: 44,  dano: 14, xp: 9, peso: 2 },
+];
+function sorteiaTipo() {
+  const tot = TIPOS.reduce((a, t) => a + t.peso, 0);
+  let r = Math.random() * tot;
+  for (const t of TIPOS) { r -= t.peso; if (r <= 0) return t; }
+  return TIPOS[0];
+}
+function spawnarChefe(grande) {
+  const a = rnd(0, TAU), d = Math.max(W, H) * 0.6 + 90;
+  const base = grande
+    ? { nome:"Colosso",  r:56, hp:1750, vel:44, dano:26, xp:120, cor:"#ff6b6b" }
+    : { nome:"Vigília",  r:38, hp:780,  vel:56, dano:18, xp:60,  cor:"#d98cff" };
+  const e = {
+    x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d,
+    vx:0, vy:0, r:base.r, cor:base.cor, nome:base.nome,
+    hp:base.hp, hpMax:base.hp, vel:base.vel, dano:base.dano, xp:base.xp,
+    flash:0, atordoado:0, morto:false, squash:0, fase:rnd(0,TAU),
+    chefe:true, grande:!!grande, pulso:0,
+  };
+  inimigos.push(e);
+  FASE.chefe = e;
+  FASE.aviso = 2.6;
+  FASE.avisoTxt = grande ? "⚠  CHEFE FINAL" : "⚠  MINI-CHEFE";
+  G.shake = 12;
+  som("super");
+  efeitos.push({ tipo:"flash", vida:.2, max:.2 });
+  return e;
+}
+
+function atualizarFases(dt) {
+  if (FASE.aviso > 0) FASE.aviso -= dt;
+
+  /* chefe morreu? */
+  if (FASE.chefe && FASE.chefe.morto) {
+    const eraGrande = FASE.chefe.grande;
+    FASE.chefe = null;
+    if (eraGrande) {
+      FASE.vitoria = true; G.over = true;
+      G.shake = 20;
+      efeitos.push({ tipo:"flash", vida:.3, max:.3 });
+      if (typeof fimDeRun === "function") fimDeRun();
+      return;
+    }
+    /* pós mini-chefe: a horda cresce */
+    FASE.n = 2;
+    FASE.multSpawn = AUMENTO_POS_MINICHEFE;
+    FASE.tetoInimigos = TETO_POS_MINICHEFE;
+    FASE.proximoEvento = G.run + 50;
+    FASE.aviso = 2.6;
+    FASE.avisoTxt = "a horda aumenta!";
+    efeitos.push({ tipo:"anel", x:p.x, y:p.y, r:20, rMax:400, vida:.6, max:.6, cor:"#ff9c6b", grosso:true });
+    G.shake = 10;
+  }
+
+  /* hora do próximo chefe */
+  if (!FASE.chefe && !FASE.vitoria && G.run >= FASE.proximoEvento) {
+    if (FASE.n === 1) spawnarChefe(false);
+    else if (FASE.n === 2) { FASE.n = 3; spawnarChefe(true); }
+  }
+}
+
+function spawnar() {
+  const t = sorteiaTipo();
+  // nasce fora da tela, em volta do jogador
+  const a = rnd(0, TAU), d = Math.max(W, H) * 0.62 + rnd(40, 140);
+  const esc = 1 + G.run * 0.02;
+  inimigos.push({
+    x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d,
+    vx: 0, vy: 0, r: t.r, cor: t.cor, nome: t.nome,
+    hp: t.hp * esc, hpMax: t.hp * esc, vel: t.vel, dano: t.dano, xp: t.xp,
+    flash: 0, atordoado: 0, morto: false, squash: 0, fase: rnd(0, TAU),
+  });
+}
+
+/* ---------- dano ---------- */
+function bater(e, dano, ang, knock, armaId) {
+  if (e.chefe) knock *= e.grande ? 0.10 : 0.18;   // chefes quase não recuam
+  // multiplicadores da progressão
+  if (typeof multDano === "function") dano = dano * multDano(armaId || p.arma);
+  if (typeof META !== "undefined") {
+    if (META.mod.sobrecarga) { META.contadorAtaque++; if (META.contadorAtaque % 5 === 0) dano *= 3; }
+    if (META.mod.gelo) { e.lento = 1.2; }
+    if (META.mod.veneno) { e.veneno = 3; e.venenoDano = dano * 0.12; }
+    if (META.mod.juizo && e.hp - dano <= e.hpMax * 0.15) dano = e.hp;
+    registrarDano(armaId || p.arma, Math.min(dano, e.hp));
+  }
+  e.hp -= dano;
+  e.flash = 0.12;
+  e.squash = 1;
+  e.vx += Math.cos(ang) * knock;
+  e.vy += Math.sin(ang) * knock;
+  numeros.push({ x: e.x, y: e.y - e.r, vy: -60, txt: Math.round(dano), vida: .6, max: .6, crit: dano > 50 });
+  for (let i = 0; i < (dano > 50 ? 12 : 6); i++) {
+    const a = ang + rnd(-.9, .9), v = rnd(90, 300);
+    particulas.push({ x: e.x, y: e.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: rnd(1.5, 4), vida: rnd(.2, .5), max: .5, cor: e.cor });
+  }
+  if (e.hp <= 0 && !e.morto) matar(e);
+}
+function matar(e) {
+  e.morto = true;
+  G.kills++;
+  som("morte");
+  if (typeof META !== "undefined") {
+    META.matouRecente++;
+    if (META.mod.sanguessuga) p.hp = Math.min(p.hpMax, p.hp + 2);
+    if (META.mod.estilhaco) {
+      efeitos.push({ tipo:"onda", x:e.x, y:e.y, r:6, rMax:70, vida:.25, max:.25, cor:"#ff9c6b" });
+      for (const o of inimigos) {
+        if (o === e || o.morto) continue;
+        if (dist2(o, e) < 70*70) { o.hp -= 18; o.flash = .1;
+          if (o.hp <= 0 && !o.morto) matar(o); }
+      }
+    }
+  }
+  for (let i = 0; i < 16; i++) {
+    const a = rnd(0, TAU), v = rnd(60, 340);
+    particulas.push({ x: e.x, y: e.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: rnd(2, 5), vida: rnd(.25, .6), max: .6, cor: e.cor });
+  }
+  efeitos.push({ tipo: "onda", x: e.x, y: e.y, r: e.r, rMax: e.r * 2.8, vida: .22, max: .22, cor: e.cor });
+  const n = e.xp > 6 ? 3 : e.xp > 3 ? 2 : 1;
+  for (let i = 0; i < n; i++) {
+    orbes.push({ x: e.x + rnd(-10, 10), y: e.y + rnd(-10, 10), vx: rnd(-70, 70), vy: rnd(-70, 70), r: 5, xp: Math.ceil(e.xp / n), vida: 14 });
+  }
+}
+
+/* ---------- controles: joystick virtual ---------- */
+const joy = { on: false, id: null, bx: 0, by: 0, x: 0, y: 0, dx: 0, dy: 0, raio: 58 };
+function ponto(t) { return { x: t.clientX, y: t.clientY }; }
+
+cv.addEventListener("pointerdown", (ev) => {
+  const q = ponto(ev);
+  if (typeof HUB !== "undefined" && HUB.aberto) { hubDown(q); return; }
+  // telas modais têm prioridade
+  if (typeof META !== "undefined") {
+    if (META.pausa && META.cartas.length) {
+      for (let i = 0; i < META.cartas.length; i++) {
+        const a = areaCarta(i);
+        if (q.x >= a.x && q.x <= a.x + a.w && q.y >= a.y && q.y <= a.y + a.h) { escolherCarta(i); return; }
+      }
+      return;
+    }
+    if (G.over && META.evolucaoPendente) {
+      const ops = META.evolucaoPendente.opcoes;
+      for (let i = 0; i < ops.length; i++) {
+        const a = areaCarta(i);
+        if (q.x >= a.x && q.x <= a.x + a.w && q.y >= a.y && q.y <= a.y + a.h) { confirmarEvolucao(ops[i].id); return; }
+      }
+      return;
+    }
+  }
+  if (G.over) {
+    if (q.y < H * .25) { HUB.aberto = true; HUB.aba = 0; HUB.scroll = 0; return; }
+    reiniciar(); return;
+  }
+  if (btnSuper(q)) { if (p.superCd <= 0) { SUPER.usar(p); p.superCd = SUPER.cdMax; } return; }
+  const a = btnArma(q); if (a !== -1) { trocarArma(a); return; }
+  if (!joy.on) {
+    joy.on = true; joy.id = ev.pointerId;
+    joy.bx = q.x; joy.by = q.y; joy.x = q.x; joy.y = q.y;
+  }
+});
+cv.addEventListener("pointermove", (ev) => {
+  if (typeof HUB !== "undefined" && HUB.aberto) { hubMove(ponto(ev)); return; }
+  if (!joy.on || ev.pointerId !== joy.id) return;
+  const q = ponto(ev);
+  joy.x = q.x; joy.y = q.y;
+});
+function soltarJoy(ev) {
+  if (typeof HUB !== "undefined" && HUB.aberto) { hubUp(ponto(ev)); return; }
+  if (joy.on && ev.pointerId === joy.id) { joy.on = false; joy.dx = 0; joy.dy = 0; }
+}
+cv.addEventListener("pointerup", soltarJoy);
+cv.addEventListener("pointercancel", soltarJoy);
+
+// teclado (pra testar no desktop)
+const teclas = {};
+addEventListener("keydown", e => {
+  teclas[e.key.toLowerCase()] = true;
+  if (e.key === " ") { if (p.superCd <= 0) { SUPER.usar(p); p.superCd = SUPER.cdMax; } }
+  const emPausa = (typeof META !== "undefined") && (META.pausa || (G.over && META.evolucaoPendente));
+  if (emPausa) {
+    const i = ["1","2","3"].indexOf(e.key);
+    if (i >= 0) {
+      if (META.pausa) escolherCarta(i);
+      else if (META.evolucaoPendente && META.evolucaoPendente.opcoes[i]) confirmarEvolucao(META.evolucaoPendente.opcoes[i].id);
+    }
+    return;
+  }
+  if (e.key === "1") trocarArma(0);
+  if (e.key === "2") trocarArma(1);
+  if (e.key === "3") trocarArma(2);
+  if (G.over && e.key === "Enter") reiniciar();
+});
+addEventListener("keyup", e => { teclas[e.key.toLowerCase()] = false; });
+
+function nomeArma(id) {
+  if (typeof META !== "undefined" && META.save) { const a = P.armaAtual(META.save, id); return a; }
+  return ARMAS[id];
+}
+function trocarArma(i) {
+  const nova = ORDEM_ARMAS[i];
+  if (!nova || nova === p.arma) return;
+  p.arma = nova; p.cd = 0.12;
+  efeitos.push({ tipo: "anel", x: p.x, y: p.y, r: 18, rMax: 46, vida: .25, max: .25, cor: ARMAS[nova].cor });
+  som("xp");
+}
+
+/* botões na tela (posições calculadas no desenho) */
+function posSuper() { return { x: W - 66, y: H - 96, r: 38 }; }
+function posArma(i) { const base = W - 66 - 3 * 52; return { x: base + i * 52 + 26, y: H - 42, r: 22 }; }
+function btnSuper(q) { const b = posSuper(); return Math.hypot(q.x - b.x, q.y - b.y) < b.r + 8; }
+function btnArma(q) {
+  for (let i = 0; i < ORDEM_ARMAS.length; i++) {
+    const b = posArma(i);
+    if (Math.hypot(q.x - b.x, q.y - b.y) < b.r + 8) return i;
+  }
+  return -1;
+}
+
+/* ---------- update ---------- */
+let spawnT = 0;
+function update(dt) {
+  G.run += dt;
+
+  /* movimento */
+  let mx = 0, my = 0;
+  if (joy.on) {
+    let dx = joy.x - joy.bx, dy = joy.y - joy.by;
+    const d = Math.hypot(dx, dy);
+    if (d > 6) {
+      const k = Math.min(d, joy.raio) / joy.raio;
+      mx = (dx / d) * k; my = (dy / d) * k;
+    }
+  }
+  if (teclas["arrowup"] || teclas["w"]) my = -1;
+  if (teclas["arrowdown"] || teclas["s"]) my = 1;
+  if (teclas["arrowleft"] || teclas["a"]) mx = -1;
+  if (teclas["arrowright"] || teclas["d"]) mx = 1;
+  const m = Math.hypot(mx, my);
+  if (m > 1) { mx /= m; my /= m; }
+
+  const velMult = (typeof multVelocidade === 'function') ? multVelocidade() : 1;
+  const alvoVx = mx * p.vel * velMult, alvoVy = my * p.vel * velMult;
+  // aceleração/atrito: dá peso sem ficar escorregadio
+  p.vx = lerp(p.vx, alvoVx, 1 - Math.pow(0.001, dt));
+  p.vy = lerp(p.vy, alvoVy, 1 - Math.pow(0.001, dt));
+  if (p.recuo > 0) { p.recuo -= dt; p.vx -= Math.cos(p.mira) * 240 * dt * 3; p.vy -= Math.sin(p.mira) * 240 * dt * 3; }
+  p.x += p.vx * dt; p.y += p.vy * dt;
+  if (m > 0.1) p.passo += dt * 12;
+  p.trilha = p.trilha || [];
+  p.trilhaT = (p.trilhaT || 0) + dt;
+  if (p.trilhaT > .045) { p.trilhaT = 0; p.trilha.push({x:p.x, y:p.y});
+    if (p.trilha.length > 12) p.trilha.shift(); }
+  p.lean = lerp(p.lean, mx * 0.25, dt * 10);
+
+  /* mira: inimigo vivo mais próximo (auto-aim) */
+  let alvo = null, melhor = Infinity;
+  for (const e of inimigos) {
+    if (e.morto) continue;
+    let d = dist2(e, p);
+    // chefes têm prioridade: contam como se estivessem bem mais perto
+    if (e.chefe) d *= 0.16;
+    if (d < melhor) { melhor = d; alvo = e; }
+  }
+  // distância real do alvo (para checar alcance da arma)
+  if (alvo) melhor = dist2(alvo, p);
+  if (alvo) {
+    const ang = Math.atan2(alvo.y - p.y, alvo.x - p.x);
+    let da = ang - p.mira;
+    while (da > Math.PI) da -= TAU; while (da < -Math.PI) da += TAU;
+    p.mira += da * Math.min(1, dt * 14);   // vira suave, não teleporta
+  } else if (m > 0.1) {
+    p.mira = Math.atan2(my, mx);
+  }
+
+  /* ataque automático */
+  const arma = ARMAS[p.arma];
+  p.cd -= dt;
+  if (p.cd <= 0 && alvo) {
+    const alcanceOk = arma.alcance ? melhor < Math.pow(arma.alcance + 40, 2) : melhor < Math.pow(520, 2);
+    if (alcanceOk) { arma.atacar(p); p.cd = arma.cd / ((typeof multCadencia==='function')?multCadencia():1);
+      if (typeof META !== 'undefined' && META.mod.eco && Math.random() < 0.2) p.cd *= 0.15; }
+  }
+  if (p.superCd > 0) p.superCd -= dt;
+  if (p.inv > 0) p.inv -= dt;
+
+  /* spawn crescente */
+  atualizarFases(dt);
+  spawnT -= dt;
+  let ritmo = Math.max(0.28, 1.10 - G.run * 0.010) / FASE.multSpawn;
+  if (FASE.chefe) ritmo *= 2.2;          // durante o chefe, menos gente pra dar foco
+  if (spawnT <= 0 && inimigos.length < FASE.tetoInimigos) { spawnar(); spawnT = ritmo; }
+
+  /* inimigos */
+  for (const e of inimigos) {
+    if (e.morto) continue;
+    if (e.flash > 0) e.flash -= dt;
+    if (e.squash > 0) e.squash -= dt * 4;
+    if (e.congelado > 0) { e.congelado -= dt; e.vx *= .05; e.vy *= .05; }
+    else if (e.atordoado > 0) { e.atordoado -= dt; }
+    else {
+      const a = Math.atan2(p.y - e.y, p.x - e.x);
+      e.vx = lerp(e.vx, Math.cos(a) * e.vel, dt * 3);
+      e.vy = lerp(e.vy, Math.sin(a) * e.vel, dt * 3);
+    }
+    if (e.lento > 0) { e.lento -= dt; e.vx *= 0.55; e.vy *= 0.55; }
+    if (e.veneno > 0) { e.veneno -= dt; e.hp -= (e.venenoDano || 3) * dt;
+      if (Math.random() < dt*6) particulas.push({x:e.x+rnd(-6,6),y:e.y,vx:0,vy:-30,r:2,vida:.4,max:.4,cor:"#9cff8a"});
+      if (e.hp <= 0 && !e.morto) matar(e); }
+    if (typeof META !== "undefined" && META.mod.tempo) {
+      const dd = Math.hypot(e.x-p.x, e.y-p.y);
+      if (dd < 200) { e.vx *= 0.7; e.vy *= 0.7; }
+    }
+    e.vx *= Math.pow(0.02, dt); e.vy *= Math.pow(0.02, dt);   // atrito do knockback
+    e.x += e.vx * dt; e.y += e.vy * dt;
+    e.fase += dt * 6;
+
+    // separação simples pra não empilhar tudo num ponto
+    for (const o of inimigos) {
+      if (o === e || o.morto) continue;
+      const dx = e.x - o.x, dy = e.y - o.y, dd = Math.hypot(dx, dy), min = e.r + o.r;
+      if (dd > 0 && dd < min) {
+        const f = (min - dd) / min * 130 * dt;
+        e.x += (dx / dd) * f; e.y += (dy / dd) * f;
+      }
+    }
+
+    // dano no jogador
+    if (p.inv <= 0 && dist2(e, p) < Math.pow(e.r + p.r, 2)) {
+      let dmg = e.dano;
+      if (typeof EXTRAS !== "undefined" && EXTRAS.reducaoDano > 0) dmg *= (1 - EXTRAS.reducaoDano);
+      if (typeof META !== "undefined") {
+        if (META.escudo > 0) { const abs = Math.min(META.escudo, dmg); META.escudo -= abs; dmg -= abs; META.escudoT = 0; }
+        if (META.mod.espinhos) { e.hp -= 22; e.flash = .12; if (e.hp<=0 && !e.morto) matar(e); }
+      }
+      p.hp -= dmg; p.inv = 0.7;
+      G.shake = Math.max(G.shake, 7); G.hitstop = Math.max(G.hitstop, .06);
+      som("dano");
+      const a = Math.atan2(p.y - e.y, p.x - e.x);
+      p.vx += Math.cos(a) * 300; p.vy += Math.sin(a) * 300;
+      e.vx -= Math.cos(a) * 200; e.vy -= Math.sin(a) * 200;
+      if (p.hp <= 0) { p.hp = 0; G.over = true; if (typeof fimDeRun === 'function') fimDeRun(); }
+    }
+  }
+  inimigos = inimigos.filter(e => !e.morto);
+
+  /* projéteis */
+  for (const b of projeteis) {
+    b.x += b.vx * dt; b.y += b.vy * dt; b.vida -= dt;
+    for (const e of inimigos) {
+      if (e.morto || b.atingidos.includes(e)) continue;
+      if (dist2(b, e) < Math.pow(b.r + e.r, 2)) {
+        bater(e, b.dano, Math.atan2(b.vy, b.vx), b.knock, 'varinha');
+        if (typeof aoProjetilAcertar === 'function') aoProjetilAcertar(b, e);
+        b.atingidos.push(e);
+        b.perfura--;
+        G.shake = Math.max(G.shake, b.arma.shake);
+        G.hitstop = Math.max(G.hitstop, b.arma.hitstop);
+        if (b.perfura <= 0) b.vida = 0;
+        break;
+      }
+    }
+  }
+  projeteis = projeteis.filter(b => b.vida > 0);
+
+  /* orbes de XP com ímã */
+  for (const o of orbes) {
+    o.vida -= dt;
+    const d = Math.hypot(p.x - o.x, p.y - o.y);
+    const raioC = p.raioColeta || 130;
+    if (d < raioC) {
+      const f = (1 - d / raioC) * 1500;
+      const a = Math.atan2(p.y - o.y, p.x - o.x);
+      o.vx += Math.cos(a) * f * dt; o.vy += Math.sin(a) * f * dt;
+    }
+    o.vx *= Math.pow(0.15, dt); o.vy *= Math.pow(0.15, dt);
+    o.x += o.vx * dt; o.y += o.vy * dt;
+    if (d < p.r + 8) {
+      o.vida = 0;
+      p.xp += o.xp * (typeof META !== "undefined" && META.mod.colheita ? 2 : 1);
+      som("xp");
+      if (typeof META !== "undefined" && META.mod.orbeVoraz) {
+        efeitos.push({ tipo:"onda", x:p.x, y:p.y, r:8, rMax:90, vida:.22, max:.22, cor:"#7fd858" });
+        for (const q of inimigos) { if (!q.morto && dist2(q,p) < 90*90) { q.hp -= 12; q.flash=.1;
+          if (q.hp<=0 && !q.morto) matar(q); } }
+      }
+      if (p.xp >= p.xpProx) {
+        p.xp -= p.xpProx; p.nivel++; p.xpProx = Math.round(p.xpProx * 1.45);
+        p.hpMax += 8; p.hp = Math.min(p.hpMax, p.hp + 18);
+        efeitos.push({ tipo: "anel", x: p.x, y: p.y, r: 20, rMax: 120, vida: .45, max: .45, cor: "#ffe08a", grosso: true });
+        G.shake = Math.max(G.shake, 4);
+        som("nivel");
+        if (typeof aoSubirNivel === "function") aoSubirNivel();
+      }
+    }
+  }
+  orbes = orbes.filter(o => o.vida > 0);
+
+  /* partículas, números, efeitos */
+  for (const q of particulas) {
+    q.vida -= dt;
+    q.x += q.vx * dt; q.y += q.vy * dt;
+    q.vx *= Math.pow(0.08, dt); q.vy *= Math.pow(0.08, dt);
+  }
+  particulas = particulas.filter(q => q.vida > 0);
+
+  for (const n of numeros) { n.vida -= dt; n.y += n.vy * dt; n.vy += 130 * dt; }
+  numeros = numeros.filter(n => n.vida > 0);
+
+  for (const f of efeitos) f.vida -= dt;
+  efeitos = efeitos.filter(f => f.vida > 0);
+
+  /* superpoderes contínuos (torres, drones, auras, dash) */
+  if (typeof atualizarAtivos === "function") atualizarAtivos(dt);
+  if (typeof atualizarExtras === "function") atualizarExtras(dt);
+
+  /* meta: escudo regenera, frenesi decai */
+  if (typeof META !== "undefined") {
+    if (META.escudoMax > 0) {
+      META.escudoT += dt;
+      if (META.escudoT > 4 && META.escudo < META.escudoMax) META.escudo = Math.min(META.escudoMax, META.escudo + 14 * dt);
+    }
+    META.matouRecente = Math.max(0, META.matouRecente - dt * 1.2);
+  }
+
+  /* câmera segue com folga */
+  cam.x = lerp(cam.x, p.x, 1 - Math.pow(0.0001, dt));
+  cam.y = lerp(cam.y, p.y, 1 - Math.pow(0.0001, dt));
+
+  /* shake decai */
+  if (G.shake > 0) {
+    G.shake = Math.max(0, G.shake - dt * 34);
+    G.shakeX = rnd(-G.shake, G.shake);
+    G.shakeY = rnd(-G.shake, G.shake);
+  } else { G.shakeX = 0; G.shakeY = 0; }
+}
+
+/* ---------- desenho ---------- */
+function grade() {
+  const s = 64;
+  const ox = -((cam.x % s) + s) % s, oy = -((cam.y % s) + s) % s;
+  ctx.strokeStyle = "rgba(255,255,255,.035)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = ox; x < W + s; x += s) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+  for (let y = oy; y < H + s; y += s) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+  ctx.stroke();
+}
+
+function desenhar() {
+  ctx.fillStyle = "#0d1210";
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.save();
+  ctx.translate(W / 2 - cam.x + G.shakeX, H / 2 - cam.y + G.shakeY);
+
+  grade();
+
+  // orbes de XP
+  for (const o of orbes) {
+    const pulso = 1 + Math.sin(G.t * 8 + o.x) * .18;
+    ctx.fillStyle = "#7fd858";
+    ctx.beginPath(); ctx.arc(o.x, o.y, o.r * pulso, 0, TAU); ctx.fill();
+    ctx.fillStyle = "rgba(127,216,88,.25)";
+    ctx.beginPath(); ctx.arc(o.x, o.y, o.r * 2.4 * pulso, 0, TAU); ctx.fill();
+  }
+
+  // efeitos atrás
+  for (const f of efeitos) {
+    const k = f.vida / f.max;
+    if (f.tipo === "onda" || f.tipo === "anel") {
+      const r = lerp(f.r, f.rMax, 1 - k);
+      ctx.strokeStyle = f.cor; ctx.globalAlpha = k * .85;
+      ctx.lineWidth = f.grosso ? 7 * k : 3.5 * k;
+      ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, TAU); ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  if (typeof desenharAtivos === "function") desenharAtivos();
+  if (typeof desenharExtras === "function") desenharExtras();
+
+  // inimigos
+  for (const e of inimigos) {
+    const sq = 1 + Math.max(0, e.squash) * .35;
+    const bob = Math.sin(e.fase) * 2;
+    ctx.save();
+    ctx.translate(e.x, e.y + bob);
+    ctx.scale(1 / sq, sq);
+    ctx.fillStyle = e.flash > 0 ? "#fff" : e.cor;
+    ctx.beginPath(); ctx.arc(0, 0, e.r, 0, TAU); ctx.fill();
+    // olhinhos (dá personalidade barata)
+    if (e.flash <= 0) {
+      ctx.fillStyle = "#101410";
+      const dx = Math.cos(Math.atan2(p.y - e.y, p.x - e.x)) * e.r * .22;
+      const dy = Math.sin(Math.atan2(p.y - e.y, p.x - e.x)) * e.r * .22;
+      ctx.beginPath(); ctx.arc(dx - e.r * .3, dy - e.r * .12, e.r * .13, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(dx + e.r * .3, dy - e.r * .12, e.r * .13, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+    // barra de vida
+    if (e.hp < e.hpMax) {
+      const w = e.r * 2, h = 4;
+      ctx.fillStyle = "rgba(0,0,0,.5)";
+      ctx.fillRect(e.x - w / 2, e.y - e.r - 11, w, h);
+      ctx.fillStyle = "#ff6b6b";
+      ctx.fillRect(e.x - w / 2, e.y - e.r - 11, w * clamp(e.hp / e.hpMax, 0, 1), h);
+    }
+    if (e.chefe) {
+      ctx.strokeStyle = e.cor; ctx.lineWidth = 2;
+      ctx.globalAlpha = .5 + Math.sin(G.t * 5) * .25;
+      ctx.beginPath(); ctx.arc(e.x, e.y, e.r + 8, 0, TAU); ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+    if (e.atordoado > 0) {
+      ctx.fillStyle = "#ffe08a";
+      ctx.font = "12px sans-serif"; ctx.textAlign = "center";
+      ctx.fillText("✦", e.x, e.y - e.r - 15);
+    }
+  }
+
+  // projéteis
+  for (const b of projeteis) {
+    ctx.fillStyle = b.cor;
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
+    ctx.globalAlpha = .3;
+    ctx.beginPath(); ctx.arc(b.x - b.vx * .012, b.y - b.vy * .012, b.r * 1.7, 0, TAU); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  // jogador
+  // rastro
+  if (typeof rastroDoJogador === "function" && p.trilha) {
+    const rst = rastroDoJogador();
+    if (rst !== "nenhum") {
+      const corP = corDoJogador(G.t);
+      p.trilha.forEach((t, i) => {
+        const k = i / p.trilha.length;
+        ctx.globalAlpha = k * (rst === "eco" ? .45 : .3);
+        ctx.fillStyle = rst === "faisca" ? "#ffe08a" : corP;
+        if (rst === "eco") { ctx.fillStyle = corP; desenharForma(t.x, t.y, p.r * k, formaDoJogador()); }
+        else { ctx.beginPath(); ctx.arc(t.x, t.y, (rst==="faisca"?3:5) * k, 0, TAU); ctx.fill(); }
+      });
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  const piscando = p.inv > 0 && Math.floor(G.t * 22) % 2 === 0;
+  if (!piscando) {
+    const bob = Math.sin(p.passo) * 2.5;
+    ctx.save();
+    ctx.translate(p.x, p.y + bob);
+    ctx.rotate(p.lean);
+    ctx.fillStyle = (typeof corDoJogador === "function") ? corDoJogador(G.t) : "#eaf6ff";
+    if (typeof desenharForma === "function") desenharForma(0, 0, p.r, formaDoJogador());
+    else { ctx.beginPath(); ctx.arc(0, 0, p.r, 0, TAU); ctx.fill(); }
+    ctx.restore();
+    // indicador da arma na direção da mira
+    const arma = ARMAS[p.arma];
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.mira);
+    ctx.fillStyle = arma.cor;
+    ctx.fillRect(p.r - 2, -3, 16, 6);
+    ctx.restore();
+  }
+
+  // arcos de ataque (na frente)
+  for (const f of efeitos) {
+    if (f.tipo !== "arco") continue;
+    const k = f.vida / f.max;
+    ctx.strokeStyle = f.cor; ctx.globalAlpha = k * .9;
+    ctx.lineWidth = (f.grosso ? 16 : 9) * k;
+    ctx.lineCap = "round";
+    const varre = lerp(-f.arco / 2, f.arco / 2, 1 - k);
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, f.r * .72, f.ang - f.arco / 2, f.ang + varre);
+    ctx.stroke();
+    ctx.globalAlpha = 1; ctx.lineCap = "butt";
+  }
+
+  // partículas
+  for (const q of particulas) {
+    ctx.globalAlpha = clamp(q.vida / q.max, 0, 1);
+    ctx.fillStyle = q.cor;
+    ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, TAU); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // números de dano
+  for (const n of numeros) {
+    const k = clamp(n.vida / n.max, 0, 1);
+    ctx.globalAlpha = k;
+    ctx.fillStyle = n.crit ? "#ffcf6b" : "#fff";
+    ctx.font = `bold ${n.crit ? 22 : 16}px Sora, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.fillText(n.txt, n.x, n.y);
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.restore();
+
+  // flash de tela
+  for (const f of efeitos) {
+    if (f.tipo !== "flash") continue;
+    ctx.fillStyle = `rgba(255,255,255,${(f.vida / f.max) * .5})`;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  hud();
+}
+
+function hud() {
+  // vida
+  const bw = W - 32, bh = 12;
+  ctx.fillStyle = "rgba(0,0,0,.45)";
+  ctx.fillRect(16, 14, bw, bh);
+  ctx.fillStyle = p.hp / p.hpMax < .3 ? "#ff6b6b" : "#7fd858";
+  ctx.fillRect(16, 14, bw * clamp(p.hp / p.hpMax, 0, 1), bh);
+  ctx.strokeStyle = "rgba(255,255,255,.18)"; ctx.lineWidth = 1;
+  ctx.strokeRect(16, 14, bw, bh);
+
+  // xp
+  ctx.fillStyle = "rgba(0,0,0,.45)";
+  ctx.fillRect(16, 30, bw, 6);
+  ctx.fillStyle = "#8be9ff";
+  ctx.fillRect(16, 30, bw * clamp(p.xp / p.xpProx, 0, 1), 6);
+
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 13px Sora, sans-serif"; ctx.textAlign = "left";
+  ctx.fillText(`Nv ${p.nivel}`, 16, 54);
+  ctx.textAlign = "center";
+  const restante = FASE.chefe ? null : Math.max(0, Math.ceil(FASE.proximoEvento - G.run));
+  ctx.fillText(restante !== null ? `${Math.floor(G.run)}s  ·  próximo em ${restante}s` : `${Math.floor(G.run)}s`, W / 2, 54);
+  ctx.textAlign = "right";
+  ctx.fillText(`${G.kills} ☠`, W - 16, 54);
+
+  // barra do chefe
+  if (FASE.chefe && !FASE.chefe.morto) {
+    const c = FASE.chefe, bw2 = W - 60;
+    ctx.fillStyle = "rgba(0,0,0,.55)";
+    ctx.fillRect(30, 92, bw2, 14);
+    ctx.fillStyle = c.cor;
+    ctx.fillRect(30, 92, bw2 * clamp(c.hp / c.hpMax, 0, 1), 14);
+    ctx.strokeStyle = "rgba(255,255,255,.25)"; ctx.lineWidth = 1;
+    ctx.strokeRect(30, 92, bw2, 14);
+    ctx.fillStyle = "#fff"; ctx.font = "bold 11px Sora, sans-serif"; ctx.textAlign = "center";
+    ctx.fillText(c.nome.toUpperCase(), W / 2, 103);
+  }
+
+  // aviso de fase
+  if (FASE.aviso > 0) {
+    ctx.globalAlpha = Math.min(1, FASE.aviso);
+    ctx.textAlign = "center";
+    ctx.fillStyle = FASE.n >= 3 ? "#ff6b6b" : "#ffcf6b";
+    ctx.font = "bold 26px Sora, sans-serif";
+    ctx.fillText(FASE.avisoTxt, W / 2, H * .42);
+    ctx.globalAlpha = 1;
+  }
+
+  // joystick
+  if (joy.on) {
+    let dx = joy.x - joy.bx, dy = joy.y - joy.by;
+    const d = Math.hypot(dx, dy);
+    if (d > joy.raio) { dx = dx / d * joy.raio; dy = dy / d * joy.raio; }
+    ctx.strokeStyle = "rgba(255,255,255,.22)"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(joy.bx, joy.by, joy.raio, 0, TAU); ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.30)";
+    ctx.beginPath(); ctx.arc(joy.bx + dx, joy.by + dy, 26, 0, TAU); ctx.fill();
+  }
+
+  // botão super
+  const b = posSuper();
+  const pronto = p.superCd <= 0;
+  ctx.fillStyle = pronto ? "rgba(255,224,138,.28)" : "rgba(255,255,255,.08)";
+  ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
+  ctx.strokeStyle = pronto ? "#ffe08a" : "rgba(255,255,255,.2)";
+  ctx.lineWidth = pronto ? 3 : 2;
+  ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.stroke();
+  if (!pronto) {
+    ctx.strokeStyle = "#ffe08a"; ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - p.superCd / SUPER.cdMax));
+    ctx.stroke();
+  }
+  ctx.font = "24px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.globalAlpha = pronto ? 1 : .45;
+  ctx.fillText((typeof superAtual === "function") ? superAtual().icone : SUPER.icone, b.x, b.y + 1);
+  ctx.globalAlpha = 1;
+
+  // botões de arma
+  ORDEM_ARMAS.forEach((k, i) => {
+    const q = posArma(i), sel = p.arma === k;
+    ctx.fillStyle = sel ? "rgba(255,255,255,.22)" : "rgba(255,255,255,.07)";
+    ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, TAU); ctx.fill();
+    ctx.strokeStyle = sel ? ARMAS[k].cor : "rgba(255,255,255,.16)";
+    ctx.lineWidth = sel ? 2.5 : 1.5;
+    ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, TAU); ctx.stroke();
+    ctx.font = "17px sans-serif";
+    ctx.globalAlpha = sel ? 1 : .55;
+    ctx.fillText(nomeArma(k).icone, q.x, q.y + 1);
+    ctx.globalAlpha = 1;
+  });
+  ctx.textBaseline = "alphabetic";
+
+  // nome da arma atual
+  const infoArma = nomeArma(p.arma);
+  ctx.fillStyle = ARMAS[p.arma].cor;
+  ctx.font = "bold 12px Sora, sans-serif"; ctx.textAlign = "right";
+  ctx.fillText(`${infoArma.nome} · ${infoArma.desc}`, W - 16, H - 76);
+
+  // modificadores ativos (ícones no canto)
+  if (typeof META !== "undefined" && META.modAtivos.length) {
+    ctx.font = "15px sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    META.modAtivos.forEach((id, i) => {
+      const m = P.MODIFICADORES.find(x => x.id === id);
+      if (!m) return;
+      const col = i % 6, lin = Math.floor(i / 6);
+      ctx.globalAlpha = .85;
+      ctx.fillText(m.icone, 16 + col * 24, 76 + lin * 24);
+      ctx.globalAlpha = 1;
+    });
+    ctx.textBaseline = "alphabetic";
+  }
+
+  // escudo
+  if (typeof META !== "undefined" && META.escudoMax > 0 && META.escudo > 0) {
+    ctx.fillStyle = "#8be9ff";
+    ctx.fillRect(16, 40, (W - 32) * (META.escudo / META.escudoMax) * .4, 4);
+  }
+
+  // ——— telas modais ———
+  if (typeof META !== "undefined") {
+    if (META.pausa && META.cartas.length) { telaCartas(); return; }
+    if (G.over && META.evolucaoPendente) { telaEvolucao(); return; }
+  }
+
+  // game over
+  if (G.over) {
+    ctx.fillStyle = "rgba(8,10,9,.88)";
+    ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = "center";
+    ctx.fillStyle = FASE.vitoria ? "#7fd858" : "#fff";
+    ctx.font = "bold 30px Sora, sans-serif";
+    ctx.fillText(FASE.vitoria ? "🏆 VITÓRIA" : "fim da run", W / 2, H * .3);
+    ctx.font = "15px Sora, sans-serif";
+    ctx.fillStyle = "#9db8a4";
+    ctx.fillText(`${Math.floor(G.run)}s · nível ${p.nivel} · ${G.kills} derrotados`, W / 2, H * .3 + 30);
+
+    if (typeof META !== "undefined" && META.save) {
+      // fragmentos ganhos
+      ctx.fillStyle = "#ffcf6b"; ctx.font = "bold 17px Sora, sans-serif";
+      ctx.fillText(`+${META.ultimoFrag || 0} 💎  (total ${META.save.fragmentos})`, W / 2, H * .3 + 62);
+
+      // barras de maestria
+      let y = H * .46;
+      ctx.font = "12px Sora, sans-serif";
+      for (const arma of ["espada", "varinha", "martelo"]) {
+        const est = P.estadoArma(META.save, arma);
+        const at = P.armaAtual(META.save, arma);
+        const bw = W - 80;
+        ctx.textAlign = "left";
+        ctx.fillStyle = "#cfe0d2";
+        ctx.fillText(`${at.icone} ${at.nome}`, 40, y - 6);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#7d8f7f";
+        ctx.fillText(est.prox ? `T${est.tier} · ${Math.round(est.maestria)}/${est.prox}` : `T3 máx`, W - 40, y - 6);
+        ctx.fillStyle = "rgba(255,255,255,.09)";
+        ctx.fillRect(40, y, bw, 6);
+        ctx.fillStyle = est.tier === 3 ? "#ffcf6b" : "#7fd858";
+        ctx.fillRect(40, y, bw * est.pct, 6);
+        y += 34;
+      }
+    }
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#7fd858";
+    ctx.font = "bold 16px Sora, sans-serif";
+    ctx.fillText("toque para jogar de novo", W / 2, H * .82);
+    ctx.fillStyle = "#7d8f7f"; ctx.font = "13px Sora, sans-serif";
+    ctx.fillText("toque no topo para voltar ao menu", W / 2, H * .88);
+  }
+}
+
+/* ——— tela de escolha de upgrade (3 cartas) ——— */
+function areaCarta(i) {
+  const larg = Math.min(W - 44, 360), alt = 108, gap = 14;
+  const totalH = 3 * alt + 2 * gap;
+  const y0 = (H - totalH) / 2 + 24;
+  return { x: (W - larg) / 2, y: y0 + i * (alt + gap), w: larg, h: alt };
+}
+function telaCartas() {
+  ctx.fillStyle = "rgba(8,10,9,.92)";
+  ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#ffe08a";
+  ctx.font = "bold 22px Sora, sans-serif";
+  ctx.fillText(`Nível ${p.nivel}`, W / 2, areaCarta(0).y - 44);
+  ctx.fillStyle = "#9db8a4"; ctx.font = "13px Sora, sans-serif";
+  ctx.fillText("escolha uma melhoria", W / 2, areaCarta(0).y - 22);
+
+  META.cartas.forEach((c, i) => {
+    const a = areaCarta(i);
+    const raro = c.raro === 1;
+    ctx.fillStyle = raro ? "rgba(201,167,255,.12)" : "rgba(255,255,255,.06)";
+    ctx.beginPath(); ctx.roundRect(a.x, a.y, a.w, a.h, 14); ctx.fill();
+    ctx.strokeStyle = raro ? "#c9a7ff" : "rgba(255,255,255,.18)";
+    ctx.lineWidth = raro ? 2 : 1.2;
+    ctx.beginPath(); ctx.roundRect(a.x, a.y, a.w, a.h, 14); ctx.stroke();
+
+    ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.font = "34px sans-serif";
+    ctx.fillText(c.icone, a.x + 18, a.y + a.h / 2);
+    ctx.font = "bold 17px Sora, sans-serif";
+    ctx.fillStyle = raro ? "#c9a7ff" : "#fff";
+    ctx.fillText(c.nome, a.x + 68, a.y + 36);
+    ctx.font = "13px Sora, sans-serif";
+    ctx.fillStyle = "#9db8a4";
+    quebrarTexto(c.desc, a.x + 68, a.y + 62, a.w - 84, 17);
+    if (raro) {
+      ctx.textAlign = "right"; ctx.fillStyle = "#c9a7ff"; ctx.font = "10px Sora, sans-serif";
+      ctx.fillText("RARO", a.x + a.w - 14, a.y + 18);
+    }
+    ctx.textBaseline = "alphabetic";
+  });
+}
+function quebrarTexto(txt, x, y, larg, lh) {
+  const palavras = String(txt).split(" ");
+  let linha = "", ly = y;
+  for (const w of palavras) {
+    const teste = linha ? linha + " " + w : w;
+    if (ctx.measureText(teste).width > larg && linha) { ctx.fillText(linha, x, ly); linha = w; ly += lh; }
+    else linha = teste;
+  }
+  if (linha) ctx.fillText(linha, x, ly);
+}
+
+/* ——— tela de evolução de arma ——— */
+function telaEvolucao() {
+  const ev = META.evolucaoPendente;
+  ctx.fillStyle = "rgba(6,8,7,.95)";
+  ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#ffcf6b";
+  ctx.font = "bold 13px Sora, sans-serif";
+  ctx.fillText(ev.tipo === "ramo" ? "EVOLUÇÃO DE ARMA" : "FORMA FINAL", W / 2, areaCarta(0).y - 66);
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 21px Sora, sans-serif";
+  const at = P.armaAtual(META.save, ev.arma);
+  ctx.fillText(`${at.icone} ${at.nome}`, W / 2, areaCarta(0).y - 40);
+  ctx.fillStyle = "#9db8a4"; ctx.font = "13px Sora, sans-serif";
+  ctx.fillText("escolha um caminho — é permanente", W / 2, areaCarta(0).y - 18);
+
+  ev.opcoes.forEach((o, i) => {
+    const a = areaCarta(i);
+    ctx.fillStyle = "rgba(255,207,107,.10)";
+    ctx.beginPath(); ctx.roundRect(a.x, a.y, a.w, a.h, 14); ctx.fill();
+    ctx.strokeStyle = "#ffcf6b"; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.roundRect(a.x, a.y, a.w, a.h, 14); ctx.stroke();
+    ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.font = "34px sans-serif";
+    ctx.fillText(o.icone, a.x + 18, a.y + a.h / 2);
+    ctx.font = "bold 17px Sora, sans-serif"; ctx.fillStyle = "#ffe08a";
+    ctx.fillText(o.nome, a.x + 68, a.y + 36);
+    ctx.font = "13px Sora, sans-serif"; ctx.fillStyle = "#9db8a4";
+    quebrarTexto(o.desc, a.x + 68, a.y + 62, a.w - 84, 17);
+    ctx.textBaseline = "alphabetic";
+  });
+}
+
+/* ---------- reset ---------- */
+function reiniciar() {
+  inimigos = []; projeteis = []; particulas = []; efeitos = []; orbes = []; numeros = [];
+  p.x = 0; p.y = 0; p.vx = 0; p.vy = 0; p.hp = 100; p.hpMax = 100;
+  p.xp = 0; p.nivel = 1; p.xpProx = 12; p.cd = 0; p.superCd = 0; p.inv = 0;
+  p.arma = "espada";
+  cam.x = 0; cam.y = 0;
+  G.run = 0; G.kills = 0; G.over = false; G.shake = 0; G.hitstop = 0;
+  spawnT = 0;
+  FASE.n = 1; FASE.chefe = null; FASE.proximoEvento = 60;
+  FASE.multSpawn = 1; FASE.tetoInimigos = 34; FASE.vitoria = false;
+  FASE.aviso = 0; FASE.avisoTxt = "";
+  if (typeof resetMeta === "function") resetMeta();
+  if (typeof limparAtivos === "function") limparAtivos();
+  if (typeof limparExtras === "function") limparExtras();
+  p.trilha = [];
+}
+
+/* ---------- loop ---------- */
+let ultimo = performance.now();
+function frame(agora) {
+  requestAnimationFrame(frame);
+  let dt = (agora - ultimo) / 1000;
+  ultimo = agora;
+  dt = Math.min(dt, 0.05);          // evita salto após aba inativa
+  G.t += dt;
+
+  if (typeof HUB !== "undefined" && HUB.aberto) {
+    if (HUB.avisoT > 0) HUB.avisoT -= dt;
+    desenharHub();
+    return;
+  }
+  const pausado = (typeof META !== "undefined") && (META.pausa || META.evolucaoPendente);
+  if (pausado) {
+    // mundo congelado enquanto o jogador escolhe
+  } else if (G.hitstop > 0) {        // hit pause: o segredo do "peso"
+    G.hitstop -= dt;
+  } else if (!G.over) {
+    update(dt);
+  }
+  desenhar();
+}
+requestAnimationFrame(frame);
+
+if (typeof initMeta === "function") initMeta();
+if (typeof superAtual === "function") { const s0 = superAtual(); SUPER.cdMax = s0.cd; SUPER.cdBase = s0.cd; }
+const el = document.getElementById("load");
+if (el) el.style.display = "none";
+
+</script>
+</body>
+</html>
